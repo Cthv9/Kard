@@ -20,18 +20,20 @@ App web mobile-first per la gestione condivisa di carte prepagate e voucher con 
 | Stili | Tailwind CSS |
 | Backend | Supabase (PostgreSQL + Realtime + Auth) |
 | State | Zustand + TanStack Query |
-| Barcode | JsBarcode (rendering locale, no dati a terzi) |
+| Barcode | JsBarcode (rendering locale, nessun dato inviato a terzi) |
 | Architettura | MVVM — hooks come ViewModel |
+| Hosting | GitHub Pages (deploy automatico via Actions) |
 
-## Setup
+## Deploy su GitHub Pages
 
-### 1. Crea un progetto Supabase
+### 1. Abilita GitHub Pages
+
+Nel repository → **Settings → Pages → Source → GitHub Actions**
+
+### 2. Crea un progetto Supabase
 
 Vai su [supabase.com](https://supabase.com) e crea un nuovo progetto.
-
-### 2. Applica le migrazioni
-
-Nel SQL editor di Supabase, esegui in ordine i file in `supabase/migrations/`:
+Nel SQL editor, esegui in ordine i file in `supabase/migrations/`:
 
 ```
 001_initial_schema.sql   — tabelle, RLS, trigger
@@ -40,35 +42,37 @@ Nel SQL editor di Supabase, esegui in ordine i file in `supabase/migrations/`:
 004_join_wallet_rpc.sql  — RPC per creare/unirsi a un wallet
 ```
 
-### 3. Configura le variabili d'ambiente
+### 3. Aggiungi i secret a GitHub Actions
 
-```bash
-cp .env.example .env.local
-```
+**Settings → Secrets and variables → Actions → New repository secret**
 
-Modifica `.env.local` con i tuoi valori da Supabase → Settings → API:
-
-```env
-VITE_SUPABASE_URL=https://tuo-progetto.supabase.co
-VITE_SUPABASE_ANON_KEY=la-tua-anon-key
-```
+| Nome | Dove trovarlo |
+|------|---------------|
+| `VITE_SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon public |
 
 > La `anon key` è sicura lato client — la sicurezza è garantita dalle RLS policy, non dal segreto della chiave.
 
-### 4. Installa e avvia
+### 4. Esegui il workflow
+
+**Actions → Deploy to GitHub Pages → Run workflow**
+
+Il sito sarà disponibile su: `https://<tuo-username>.github.io/Kard/`
+
+---
+
+> **Nota:** Il branch contiene già una build pre-compilata nella cartella `dist/`.  
+> Questa versione mostra una schermata "App non configurata" finché non aggiungi i secret e ri-esegui il workflow, che produrrà una build funzionante con le tue credenziali.
+
+## Sviluppo locale
 
 ```bash
+cp .env.example .env.local
+# modifica .env.local con le tue credenziali Supabase
+
 npm install
 npm run dev
 ```
-
-### 5. Deploy
-
-```bash
-npm run build
-```
-
-Deploya la cartella `dist/` su Netlify o Vercel (il file `public/_redirects` gestisce il routing SPA).
 
 ## Sicurezza
 
@@ -95,4 +99,6 @@ src/
 └── types/             # database.ts (schema), app.ts (tipi UI)
 supabase/
 └── migrations/        # SQL da applicare al progetto Supabase
+dist/
+└── ...                # Build pre-compilata (placeholder senza credenziali)
 ```
