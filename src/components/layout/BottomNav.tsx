@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { CreditCard, Activity, BarChart2, User } from 'lucide-react'
+import { CreditCard, BarChart2, Archive, User } from 'lucide-react'
 import { useTranslation } from '../../hooks/useTranslation'
 
 export function BottomNav() {
@@ -7,8 +7,8 @@ export function BottomNav() {
 
   const NAV_ITEMS = [
     { to: '/',        icon: CreditCard, label: t.nav.cards },
-    { to: '/stats',   icon: Activity,   label: 'Attività' },
-    { to: '/archive', icon: BarChart2,  label: t.nav.stats ?? 'Statistiche' },
+    { to: '/stats',   icon: BarChart2,  label: t.nav.stats },
+    { to: '/archive', icon: Archive,    label: t.nav.archive },
     { to: '/settings',icon: User,       label: 'Profilo' },
   ]
 
@@ -16,7 +16,7 @@ export function BottomNav() {
     <nav
       className="fixed bottom-0 inset-x-0 z-30 safe-bottom"
       style={{
-        background: 'rgba(10,10,18,0.85)',
+        background: 'var(--nav-bg)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderTop: '1px solid var(--border)',

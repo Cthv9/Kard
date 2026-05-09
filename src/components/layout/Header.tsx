@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '../../hooks/useTranslation'
+import { useCardStore } from '../../store/useCardStore'
 
 interface HeaderProps {
   cardCount?: number
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export function Header({ cardCount }: HeaderProps) {
   const profile = useAuthStore((s) => s.profile)
+  const openSearch = useCardStore((s) => s.openSearch)
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
   const t = useTranslation()
@@ -80,6 +82,7 @@ export function Header({ cardCount }: HeaderProps) {
       <div className="flex items-center gap-2.5">
         {/* Search button */}
         <button
+          onClick={openSearch}
           className="w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{
             background: 'var(--surface2)',

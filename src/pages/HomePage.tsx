@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { Plus } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { CardDeck } from '../components/cards/CardDeck'
 import { CardActions } from '../components/cards/CardActions'
@@ -8,6 +7,7 @@ import { CardScanner } from '../components/cards/CardScanner'
 import { FocusMode } from '../components/barcode/FocusMode'
 import { SpendSheet } from '../components/transactions/SpendSheet'
 import { TransactionList } from '../components/transactions/TransactionList'
+import { SearchModal } from '../components/cards/SearchModal'
 import { useActiveCards, useRealtimeCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { useBackButton } from '../hooks/useBackButton'
@@ -15,14 +15,16 @@ import { useBackButton } from '../hooks/useBackButton'
 export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
   const {
-    selectedCardId, selectCard, openAddCard,
-    isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, editingCard,
+    selectedCardId, selectCard,
+    isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, isSearchOpen, editingCard,
   } = useCardStore()
   useRealtimeCards()
   useBackButton()
 
   useEffect(() => {
-    if (cards.length > 0 && !selectedCardId) selectCard(cards[0].id)
+    if (cards.length > 0 && (!selectedCardId || !cards.find((c) => c.id === selectedCardId))) {
+      selectCard(cards[0].id)
+    }
   }, [cards, selectedCardId, selectCard])
 
   const selectedCard = cards.find((c) => c.id === selectedCardId)
@@ -112,36 +114,12 @@ export function HomePage() {
         )}
       </div>
 
-      {/* FAB — add card */}
-      <button
-        onClick={openAddCard}
-        className="active:scale-95 transition-transform"
-        style={{
-          position: 'fixed',
-          bottom: 92,
-          right: 24,
-          zIndex: 10,
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
-          background: 'var(--accent)',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 24px rgba(200,255,87,0.35)',
-        }}
-        title="Aggiungi carta"
-      >
-        <Plus size={22} strokeWidth={2.5} style={{ color: '#0a0a12' }} />
-      </button>
-
       {/* Overlays */}
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}
       {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
       {(isAddCardOpen || editingCard) && <AddCardForm />}
       {isScannerOpen && <CardScanner />}
+      {isSearchOpen && <SearchModal />}
     </div>
   )
 }

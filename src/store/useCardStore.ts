@@ -12,6 +12,7 @@ interface CardStoreState {
   isSpendSheetOpen: boolean
   isAddCardOpen: boolean
   isScannerOpen: boolean
+  isSearchOpen: boolean
   scannedCode: ScannedCode | null
   editingCard: CardWithStats | null
 
@@ -24,6 +25,8 @@ interface CardStoreState {
   closeAddCard: () => void
   openScanner: () => void
   closeScanner: () => void
+  openSearch: () => void
+  closeSearch: () => void
   setScannedCode: (data: ScannedCode) => void
   clearScannedCode: () => void
   openEditCard: (card: CardWithStats) => void
@@ -36,6 +39,7 @@ export const useCardStore = create<CardStoreState>((set) => ({
   isSpendSheetOpen: false,
   isAddCardOpen: false,
   isScannerOpen: false,
+  isSearchOpen: false,
   scannedCode: null,
   editingCard: null,
 
@@ -48,6 +52,8 @@ export const useCardStore = create<CardStoreState>((set) => ({
   closeAddCard: () => set({ isAddCardOpen: false }),
   openScanner: () => set({ isScannerOpen: true }),
   closeScanner: () => set({ isScannerOpen: false }),
+  openSearch: () => set({ isSearchOpen: true }),
+  closeSearch: () => set({ isSearchOpen: false }),
   setScannedCode: (data) => set({ scannedCode: data }),
   clearScannedCode: () => set({ scannedCode: null }),
   openEditCard: (card) => set({ editingCard: card, isAddCardOpen: true }),
