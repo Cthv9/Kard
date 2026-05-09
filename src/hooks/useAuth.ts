@@ -9,12 +9,21 @@ export function useAuthInit() {
   const isFetchingProfile = useRef(false)
 
   useEffect(() => {
+    // Failsafe: if onAuthStateChange never fires (token refresh hanging on slow/offline
+    // network on mobile resume), clear the initial isLoading:true so the spinner doesn't
+    // spin forever. 10 s is generous — normal cold start resolves in < 2 s.
+    const globalTimeoutId = setTimeout(() => setLoading(false), 10_000)
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        clearTimeout(globalTimeoutId)
         setSession(session)
         setUser(session?.user ?? null)
         if (session?.user) {
-          await loadProfile(session.user.id)
+          // Don't show the loading spinner if we already have profile data (app resume /
+          // TOKEN_REFRESHED). Only show it on first load or after sign-out when profile is null.
+          const hasExistingProfile = useAuthStore.getState().profile !== null
+          await loadProfile(session.user.id, !hasExistingProfile)
         } else {
           setProfile(null)
           setLoading(false)
@@ -23,13 +32,16 @@ export function useAuthInit() {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(globalTimeoutId)
+      subscription.unsubscribe()
+    }
   }, [setUser, setSession, setProfile, setLoading])
 
-  async function loadProfile(userId: string) {
+  async function loadProfile(userId: string, showLoader = true) {
     if (isFetchingProfile.current) return   // already in flight — skip
     isFetchingProfile.current = true
-    setLoading(true)
+    if (showLoader) setLoading(true)
 
     // Hard timeout: if the network hangs (common on mobile app-resume),
     // abort after 8 s so the spinner doesn't spin forever.
