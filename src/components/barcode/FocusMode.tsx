@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, CreditCard } from 'lucide-react'
 import { useCardStore } from '../../store/useCardStore'
 import { BarcodeDisplay, QRDisplay } from './BarcodeDisplay'
 import type { CardWithStats } from '../../types/app'
@@ -12,116 +11,182 @@ interface FocusModeProps {
 export function FocusMode({ card }: FocusModeProps) {
   const { isFocusMode, exitFocusMode, openSpendSheet } = useCardStore()
   const [codeView, setCodeView] = useState<'barcode' | 'qrcode' | 'text'>(card.code_type)
+  const [visible, setVisible] = useState(false)
 
-  // Restore codeView when card changes
   useEffect(() => {
     setCodeView(card.code_type)
   }, [card.code_type])
 
-  // Screen Wake Lock — prevents dimming at checkout
+  /* Animate in */
+  useEffect(() => {
+    if (isFocusMode) {
+      requestAnimationFrame(() => setVisible(true))
+    } else {
+      setVisible(false)
+    }
+  }, [isFocusMode])
+
+  /* Screen Wake Lock */
   useEffect(() => {
     if (!isFocusMode) return
     let wakeLock: WakeLockSentinel | null = null
-
     async function requestLock() {
       try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen')
-        }
-      } catch {
-        // graceful degradation — no crash if unsupported
-      }
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen')
+      } catch { /* graceful degradation */ }
     }
     requestLock()
-
     return () => { void wakeLock?.release() }
   }, [isFocusMode])
 
-  // Lock body scroll and attempt fullscreen for maximum brightness
+  /* Body scroll lock */
   useEffect(() => {
     if (!isFocusMode) return
     document.body.style.overflow = 'hidden'
-
-    const el = document.documentElement
-    if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
-
-    return () => {
-      document.body.style.overflow = ''
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
-    }
+    return () => { document.body.style.overflow = '' }
   }, [isFocusMode])
 
   if (!isFocusMode) return null
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex flex-col bg-white"
-      style={{ touchAction: 'none' }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-safe pt-4 pb-3 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: card.color }}
-          >
-            <CreditCard size={14} className="text-white" />
-          </div>
-          <span className="font-bold text-gray-900 text-sm">{card.name}</span>
-        </div>
-        <button
-          onClick={exitFocusMode}
-          className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-          aria-label="Chiudi"
-        >
-          <X size={20} />
-        </button>
-      </div>
+    <>
+      {/* Overlay */}
+      <div
+        onClick={exitFocusMode}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 20,
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.3s',
+        }}
+      />
 
-      {/* Code display area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
-        {codeView === 'barcode' && (
-          <div className="w-full max-w-sm">
-            <BarcodeDisplay
-              value={card.code}
-              height={140}
-              width={3}
-              displayValue
-              className="w-full"
-            />
-          </div>
-        )}
-        {codeView === 'qrcode' && (
-          <QRDisplay value={card.code} size={220} className="flex justify-center" />
-        )}
-        {codeView === 'text' && (
-          <div className="text-center">
-            <p className="text-gray-400 text-sm mb-2">Codice</p>
-            <p className="text-gray-900 font-mono text-2xl font-bold tracking-widest break-all">
+      {/* Sheet */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: '50%',
+          transform: visible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
+          width: '100%',
+          maxWidth: 420,
+          background: 'var(--surface)',
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          padding: '16px 28px 48px',
+          zIndex: 21,
+          transition: 'transform 0.4s cubic-bezier(.34,1.16,.64,1)',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        {/* Drag handle */}
+        <div
+          style={{
+            width: 40, height: 4,
+            background: 'var(--muted2)',
+            borderRadius: 2,
+            margin: '0 auto 24px',
+          }}
+        />
+
+        {/* Card name label */}
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: '1.5px',
+            textTransform: 'uppercase',
+            color: 'var(--muted)',
+            marginBottom: 6,
+          }}
+        >
+          {card.name}
+        </div>
+
+        {/* Title */}
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            color: 'var(--text)',
+            marginBottom: 28,
+          }}
+        >
+          Scansiona il barcode
+        </div>
+
+        {/* Barcode area — white background */}
+        <div
+          style={{
+            background: 'white',
+            borderRadius: 16,
+            padding: '24px 20px',
+            marginBottom: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          {codeView === 'barcode' && (
+            <BarcodeDisplay value={card.code} height={80} width={2} displayValue={false} className="w-full" />
+          )}
+          {codeView === 'qrcode' && (
+            <QRDisplay value={card.code} size={180} className="flex justify-center" />
+          )}
+          {codeView === 'text' && (
+            <p className="font-mono text-2xl font-bold tracking-widest break-all text-gray-900 text-center">
               {card.code}
             </p>
+          )}
+
+          {/* Numeric code */}
+          <div
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 16,
+              letterSpacing: 4,
+              color: '#111',
+              fontWeight: 500,
+            }}
+          >
+            {card.code}
           </div>
-        )}
+        </div>
 
-        {/* Code value text */}
-        {codeView !== 'text' && (
-          <p className="text-gray-400 font-mono text-sm text-center">{card.code}</p>
-        )}
-      </div>
-
-      {/* Toggle type (if applicable) */}
-      <div className="px-5 pb-4 space-y-3">
+        {/* Toggle barcode / QR (only when code_type is not text) */}
         {card.code_type !== 'text' && (
-          <div className="flex bg-gray-100 rounded-2xl p-1">
+          <div
+            style={{
+              display: 'flex',
+              background: 'var(--surface2)',
+              borderRadius: 12,
+              padding: 4,
+              marginBottom: 12,
+            }}
+          >
             {(['barcode', 'qrcode'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setCodeView(t)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  codeView === t
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500'
-                }`}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.2s',
+                  background: codeView === t ? 'var(--surface)' : 'transparent',
+                  color: codeView === t ? 'var(--text)' : 'var(--muted)',
+                  boxShadow: codeView === t ? '0 1px 4px rgba(0,0,0,0.2)' : 'none',
+                }}
               >
                 {t === 'barcode' ? 'Codice a barre' : 'QR Code'}
               </button>
@@ -129,15 +194,54 @@ export function FocusMode({ card }: FocusModeProps) {
           </div>
         )}
 
+        {/* Spend button (balance cards only) */}
+        {card.initial_balance > 0 && (
+          <button
+            onClick={() => { exitFocusMode(); openSpendSheet() }}
+            disabled={card.current_balance <= 0}
+            style={{
+              width: '100%',
+              height: 52,
+              borderRadius: 16,
+              background: 'var(--accent2)',
+              color: 'white',
+              fontSize: 15,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              border: 'none',
+              marginBottom: 8,
+              opacity: card.current_balance <= 0 ? 0.4 : 1,
+              transition: 'all 0.2s',
+            }}
+            className="active:scale-95"
+          >
+            Registra spesa
+          </button>
+        )}
+
+        {/* Close button */}
         <button
-          onClick={() => { exitFocusMode(); openSpendSheet() }}
-          disabled={card.current_balance <= 0}
-          className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-base hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          onClick={exitFocusMode}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 16,
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+            fontSize: 15,
+            fontWeight: 500,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}
+          className="active:scale-95"
         >
-          Registra spesa
+          Chiudi
         </button>
       </div>
-    </div>,
+    </>,
     document.body
   )
 }

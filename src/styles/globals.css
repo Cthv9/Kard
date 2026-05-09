@@ -1,41 +1,53 @@
 @import "tailwindcss";
 
-/* ── Theme tokens ───────────────────────────────────────────────────────────── */
+/* ── Design tokens — dark (default) ───────────────────────────────────────── */
 :root {
-  /* dark (default) */
-  --page-from:    #0f0826;
-  --page-to:      #1a0f3d;
-  --panel:        #1a1040;
-  --nav:          #0f0826;
-  --border-subtle: rgba(255,255,255,0.1);
-  --hover-item:   rgba(255,255,255,0.08);
-  --text-primary: #ffffff;
-  --text-muted:   rgba(255,255,255,0.6);
-  --input-bg:     rgba(255,255,255,0.1);
-  --input-border: rgba(255,255,255,0.2);
-  --page-bg:      linear-gradient(to bottom, var(--page-from), var(--page-to));
+  --bg:        #0a0a12;
+  --surface:   #13131f;
+  --surface2:  #1c1c2e;
+  --border:    rgba(255,255,255,0.07);
+  --accent:    #c8ff57;
+  --accent2:   #7c6dfa;
+  --text:      #f0f0f8;
+  --muted:     rgba(240,240,248,0.4);
+  --muted2:    rgba(240,240,248,0.15);
+  --danger:    #ff5f6d;
+
+  /* legacy aliases used by a few components */
+  --panel:          var(--surface);
+  --nav:            var(--bg);
+  --border-subtle:  var(--border);
+  --hover-item:     rgba(255,255,255,0.06);
+  --text-primary:   var(--text);
+  --text-muted:     var(--muted);
+  --input-bg:       rgba(255,255,255,0.07);
+  --input-border:   rgba(255,255,255,0.12);
+  --page-bg:        var(--bg);
 }
 
+/* ── Light theme ──────────────────────────────────────────────────────────── */
 .light {
-  --page-from:    #f0f0f7;
-  --page-to:      #e4dcf5;
-  --panel:        #ffffff;
-  --nav:          #f5f2ff;
-  --border-subtle: rgba(0,0,0,0.08);
-  --hover-item:   rgba(0,0,0,0.05);
-  --text-primary: #0f0826;
-  --text-muted:   rgba(15,8,38,0.55);
-  --input-bg:     rgba(0,0,0,0.04);
-  --input-border: rgba(0,0,0,0.15);
+  --bg:       #f5f5fa;
+  --surface:  #ffffff;
+  --surface2: #ededf4;
+  --border:   rgba(0,0,0,0.08);
+  --text:     #0a0a12;
+  --muted:    rgba(10,10,18,0.5);
+  --muted2:   rgba(10,10,18,0.12);
+  /* accent / accent2 / danger unchanged */
+
+  --panel:         var(--surface);
+  --nav:           var(--bg);
+  --border-subtle: var(--border);
+  --hover-item:    rgba(0,0,0,0.05);
+  --text-primary:  var(--text);
+  --text-muted:    var(--muted);
+  --input-bg:      rgba(0,0,0,0.04);
+  --input-border:  rgba(0,0,0,0.12);
+  --page-bg:       var(--bg);
 }
 
-/* Override Tailwind opacity-based utilities for light theme */
-.light .text-white           { color: var(--text-primary) !important; }
-.light [class*="text-white/"]{ color: var(--text-muted)   !important; }
-.light [class*="bg-white/"]  { background-color: var(--hover-item)   !important; }
-.light [class*="border-white/"]{ border-color: var(--border-subtle)  !important; }
-
-/* ── Radix / shadcn tokens (kept for compatibility) ─────────────────────────── */
+/* ── Radix / shadcn tokens ─────────────────────────────────────────────────── */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -63,36 +75,72 @@
   * { border-color: hsl(var(--border)); }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
   }
 }
 
-/* ── Utilities ──────────────────────────────────────────────────────────────── */
+/* ── Ambient background orbs ──────────────────────────────────────────────── */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.ambient::before {
+  content: '';
+  position: absolute;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,109,250,0.13) 0%, transparent 70%);
+  top: -80px; left: -60px;
+  animation: breathe 6s ease-in-out infinite;
+}
+.ambient::after {
+  content: '';
+  position: absolute;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,255,87,0.07) 0%, transparent 70%);
+  top: 260px; right: -40px;
+  animation: breathe 8s ease-in-out infinite reverse;
+}
+.light .ambient::before {
+  background: radial-gradient(circle, rgba(124,109,250,0.07) 0%, transparent 70%);
+}
+.light .ambient::after {
+  background: radial-gradient(circle, rgba(100,180,0,0.05) 0%, transparent 70%);
+}
+@keyframes breathe {
+  0%,100% { transform: scale(1) translate(0,0); opacity: 1; }
+  50%      { transform: scale(1.15) translate(10px,20px); opacity: 0.7; }
+}
 
-/* Safe area support for iOS notch */
+/* ── Utilities ────────────────────────────────────────────────────────────── */
+
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Adaptive input style used across forms */
 .input-dark {
   width: 100%;
   background-color: var(--input-bg);
-  color: var(--text-primary);
+  color: var(--text);
   border: 1px solid var(--input-border);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
+  font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
 }
-.input-dark::placeholder { color: var(--text-muted); opacity: 0.6; }
-.input-dark:focus { border-color: #818cf8; }
+.input-dark::placeholder { color: var(--muted); }
+.input-dark:focus { border-color: var(--accent2); }
 
 /* Scanner line animation */
 @keyframes scan-line {
@@ -103,13 +151,21 @@
   animation: scan-line 2s ease-in-out infinite;
 }
 
-/* Card deck fan animations */
+/* Card deck fan animations (kept for archive/settings card previews) */
 .card-fan-item {
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.3s ease,
               z-index 0s;
 }
-
 .card-fan-item:active {
   transition: transform 0.1s ease;
+}
+
+/* Bottom sheet slide-up */
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0); }
+}
+.sheet-open {
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.16, 0.64, 1) both;
 }

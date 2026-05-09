@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { Plus, ScanLine } from 'lucide-react'
 import { CardTile } from './CardTile'
 import { useCardStore } from '../../store/useCardStore'
@@ -8,79 +8,65 @@ interface CardDeckProps {
   cards: CardWithStats[]
 }
 
+const GAP = 14
+const H_PADDING = 24
+
 export function CardDeck({ cards }: CardDeckProps) {
   const { selectedCardId, selectCard, openAddCard, openScanner } = useCardStore()
-  const touchStartX = useRef<number | null>(null)
+  const carouselRef = useRef<HTMLDivElement>(null)
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isScrollingByCode = useRef(false)
 
   const selectedIndex = cards.findIndex((c) => c.id === selectedCardId)
   const effectiveIndex = selectedIndex === -1 ? 0 : selectedIndex
 
-  // Fan spread: cards fan out around the selected card
-  // The selected card is lifted; others fan left/right behind it
-  function getCardTransform(index: number): React.CSSProperties {
-    const n = cards.length
-    if (n === 0) return {}
+  /* Scroll carousel to a given index */
+  const scrollTo = useCallback((idx: number, smooth = true) => {
+    const el = carouselRef.current
+    if (!el) return
+    const cardWidth = el.offsetWidth - H_PADDING * 2
+    isScrollingByCode.current = true
+    el.scrollTo({ left: idx * (cardWidth + GAP), behavior: smooth ? 'smooth' : 'instant' })
+    setTimeout(() => { isScrollingByCode.current = false }, 500)
+  }, [])
 
-    const isSel = index === effectiveIndex
-    const offset = index - effectiveIndex
+  /* When selected card changes externally (e.g. dot click → selectCard), sync scroll */
+  useEffect(() => {
+    scrollTo(effectiveIndex, true)
+  }, [effectiveIndex, scrollTo])
 
-    if (isSel) {
-      return {
-        transform: 'rotate(0deg) translateY(-16px) scale(1.05)',
-        zIndex: 20,
-        filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.4))',
+  /* Detect active card from scroll position */
+  function handleScroll() {
+    if (isScrollingByCode.current) return
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
+    scrollTimerRef.current = setTimeout(() => {
+      const el = carouselRef.current
+      if (!el) return
+      const cardWidth = el.offsetWidth - H_PADDING * 2
+      const idx = Math.round(el.scrollLeft / (cardWidth + GAP))
+      const clamped = Math.max(0, Math.min(cards.length - 1, idx))
+      if (cards[clamped] && cards[clamped].id !== selectedCardId) {
+        selectCard(cards[clamped].id)
       }
-    }
-
-    // Fan behind: each card slightly rotated and offset
-    const maxAngle = Math.min(12, 60 / n)
-    const rotation = offset * maxAngle
-    const translateX = offset * 18
-    const translateY = Math.abs(offset) * 6
-    const zIdx = 20 - Math.abs(offset)
-
-    return {
-      transform: `rotate(${rotation}deg) translateX(${translateX}px) translateY(${translateY}px)`,
-      zIndex: zIdx,
-      filter: `brightness(${1 - Math.abs(offset) * 0.08})`,
-      opacity: Math.max(0.4, 1 - Math.abs(offset) * 0.15),
-    }
-  }
-
-  function handleSwipe(direction: 'left' | 'right') {
-    if (cards.length === 0) return
-    const next =
-      direction === 'right'
-        ? (effectiveIndex + 1) % cards.length
-        : (effectiveIndex - 1 + cards.length) % cards.length
-    selectCard(cards[next].id)
-  }
-
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  function handleTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    if (Math.abs(dx) > 50) handleSwipe(dx < 0 ? 'left' : 'right')
-    touchStartX.current = null
+    }, 60)
   }
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-52 gap-3">
-        <p className="text-white/50 text-sm">Nessuna carta attiva</p>
+      <div className="flex flex-col items-center justify-center py-12 gap-3 px-6">
+        <p className="text-sm" style={{ color: 'var(--muted)' }}>Nessuna carta attiva</p>
         <button
           onClick={openScanner}
-          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          style={{ background: 'var(--accent)', color: '#0a0a12' }}
         >
           <ScanLine size={16} />
           Scansiona tessera
         </button>
         <button
           onClick={openAddCard}
-          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          style={{ background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)' }}
         >
           <Plus size={16} />
           Inserisci manualmente
@@ -90,25 +76,39 @@ export function CardDeck({ cards }: CardDeckProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 py-4">
-      {/* Deck area */}
+    <div style={{ paddingBottom: 8 }}>
+      {/* Carousel */}
       <div
-        className="relative h-48 w-72 flex items-center justify-center"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        ref={carouselRef}
+        onScroll={handleScroll}
+        style={{
+          display: 'flex',
+          gap: GAP,
+          paddingLeft: H_PADDING,
+          paddingRight: H_PADDING,
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          scrollPaddingLeft: H_PADDING,
+        }}
+        className="[&::-webkit-scrollbar]:hidden"
       >
         {cards.map((card, index) => (
           <div
             key={card.id}
-            className="absolute"
-            style={getCardTransform(index)}
+            style={{
+              flex: `0 0 calc(100% - ${H_PADDING * 2}px)`,
+              minWidth: `calc(100% - ${H_PADDING * 2}px)`,
+              scrollSnapAlign: 'start',
+            }}
           >
             <CardTile
               card={card}
               isSelected={index === effectiveIndex}
               onClick={() => {
-                if (index === effectiveIndex) return
                 selectCard(card.id)
+                scrollTo(index)
               }}
             />
           </div>
@@ -116,7 +116,7 @@ export function CardDeck({ cards }: CardDeckProps) {
       </div>
 
       {/* Dot indicators */}
-      <div className="flex gap-1.5">
+      <div className="flex items-center justify-center gap-1.5 pt-3.5">
         {cards.map((card, i) => (
           <button
             key={card.id}
@@ -126,21 +126,33 @@ export function CardDeck({ cards }: CardDeckProps) {
               width: i === effectiveIndex ? 20 : 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: i === effectiveIndex ? '#fff' : 'rgba(255,255,255,0.3)',
+              background: i === effectiveIndex ? 'var(--text)' : 'var(--muted2)',
             }}
           />
         ))}
         <button
           onClick={openScanner}
-          className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center ml-1 transition-all active:scale-90"
+          className="flex items-center justify-center ml-1 transition-all active:scale-90 rounded-full"
+          style={{
+            width: 24, height: 24,
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            color: 'var(--muted)',
+          }}
           title="Scansiona tessera"
         >
           <ScanLine size={11} />
         </button>
         <button
           onClick={openAddCard}
-          className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center ml-1 transition-all active:scale-90"
-          title="Aggiungi manualmente"
+          className="flex items-center justify-center ml-0.5 transition-all active:scale-90 rounded-full"
+          style={{
+            width: 24, height: 24,
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            color: 'var(--muted)',
+          }}
+          title="Aggiungi carta"
         >
           <Plus size={12} />
         </button>

@@ -1,8 +1,5 @@
-import { Calendar, AlertTriangle } from 'lucide-react'
-import { cn, isLightColor } from '../../lib/utils'
-import { usePrivacyStore } from '../../store/usePrivacyStore'
+import { cn } from '../../lib/utils'
 import type { CardWithStats } from '../../types/app'
-import { format } from 'date-fns'
 
 interface CardTileProps {
   card: CardWithStats
@@ -12,97 +9,152 @@ interface CardTileProps {
   className?: string
 }
 
+/* Derive a darker shade of the card color for gradient end */
+function darken(hex: string, amount = 0.35): string {
+  const n = parseInt(hex.replace('#', ''), 16)
+  const r = Math.max(0, Math.round(((n >> 16) & 0xff) * (1 - amount)))
+  const g = Math.max(0, Math.round(((n >> 8) & 0xff) * (1 - amount)))
+  const b = Math.max(0, Math.round((n & 0xff) * (1 - amount)))
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+/* Mask the card number: show only last 4 digits */
+function maskCode(code: string): string {
+  const digits = code.replace(/\D/g, '')
+  if (digits.length >= 4) return `•••• •••• ${digits.slice(-4)}`
+  return '•••• ••••'
+}
+
+const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`
+
 export function CardTile({ card, isSelected, onClick, style, className }: CardTileProps) {
-  const { maskAmount } = usePrivacyStore()
-  const textColor = isLightColor(card.color) ? 'text-gray-900' : 'text-white'
-  const subtextColor = isLightColor(card.color) ? 'text-gray-600' : 'text-white/70'
+  const mid = darken(card.color, 0.2)
+  const end = darken(card.color, 0.42)
 
   return (
     <div
       onClick={onClick}
       style={{
-        backgroundColor: card.color,
+        background: `linear-gradient(135deg, ${card.color} 0%, ${mid} 50%, ${end} 100%)`,
+        height: 200,
+        borderRadius: 22,
         ...style,
       }}
       className={cn(
-        'card-fan-item relative cursor-pointer select-none',
-        'w-64 h-40 rounded-3xl p-5 shadow-xl',
-        'flex flex-col justify-between overflow-hidden',
-        isSelected && 'ring-4 ring-white/60 ring-offset-2 ring-offset-transparent',
+        'card-fan-item relative cursor-pointer select-none overflow-hidden',
+        'flex flex-col justify-between',
+        'transition-transform duration-300',
+        isSelected && 'active-card',
         className
       )}
     >
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div
-          className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20"
-          style={{ backgroundColor: isLightColor(card.color) ? '#000' : '#fff' }}
-        />
-        <div
-          className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full opacity-10"
-          style={{ backgroundColor: isLightColor(card.color) ? '#000' : '#fff' }}
-        />
-      </div>
+      {/* Noise texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: NOISE_SVG,
+          opacity: 0.4,
+          mixBlendMode: 'overlay',
+        }}
+      />
 
-      {/* Top row: name + status */}
-      <div className="relative flex items-start justify-between gap-2">
-        <h3 className={cn('font-bold text-sm leading-tight line-clamp-2', textColor)}>
-          {card.name}
-        </h3>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          {card.isExpired && (
-            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-              <AlertTriangle size={8} />
-              Scad.
-            </span>
-          )}
-          {card.isLow && !card.isExpired && (
-            <span className="bg-amber-400 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              Basso
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Decorative orbs */}
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: 130, height: 130,
+          bottom: -40, left: -20,
+          background: 'rgba(255,255,255,0.12)',
+          filter: 'blur(2px)',
+        }}
+      />
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: 90, height: 90,
+          top: -20, right: 20,
+          background: 'rgba(255,255,255,0.12)',
+          filter: 'blur(2px)',
+        }}
+      />
 
-      {/* Balance — hidden for loyalty-only cards (initial_balance === 0) */}
-      {card.initial_balance > 0 ? (
-        <div className="relative">
-          <div className={cn('text-2xl font-black tracking-tight', textColor)}>
-            {maskAmount(card.current_balance, card.currency)}
-          </div>
-          <div className={cn('text-xs mt-0.5', subtextColor)}>
-            di {maskAmount(card.initial_balance, card.currency)}
-          </div>
-        </div>
-      ) : (
-        <div className="relative" />
+      {/* Selected ring */}
+      {isSelected && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            borderRadius: 22,
+            boxShadow: 'inset 0 0 0 2.5px rgba(255,255,255,0.5)',
+          }}
+        />
       )}
 
-      {/* Bottom: progress bar + expiry */}
-      <div className="relative space-y-1.5">
-        {card.initial_balance > 0 && (
-          <div className={cn('h-1 rounded-full overflow-hidden', isLightColor(card.color) ? 'bg-black/20' : 'bg-white/20')}>
+      {/* Content */}
+      <div className="relative flex flex-col justify-between h-full p-[22px_24px]">
+        {/* Top: name + number */}
+        <div>
+          <div
+            className="font-bold text-[18px] tracking-tight"
+            style={{
+              color: 'rgba(255,255,255,0.95)',
+              textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              letterSpacing: '-0.3px',
+            }}
+          >
+            {card.name}
+          </div>
+          <div
+            className="mt-1 text-[12px]"
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              color: 'rgba(255,255,255,0.55)',
+              letterSpacing: '2px',
+            }}
+          >
+            {maskCode(card.code)}
+          </div>
+        </div>
+
+        {/* Bottom: type + chip */}
+        <div className="flex items-end justify-between">
+          <div
+            className="text-[10px] font-semibold uppercase"
+            style={{
+              letterSpacing: '1.5px',
+              color: 'rgba(255,255,255,0.5)',
+            }}
+          >
+            {card.description ?? 'Fidelity'}
+          </div>
+
+          {/* Chip icon */}
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: 32, height: 24,
+              borderRadius: 5,
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+              border: '1px solid rgba(255,255,255,0.2)',
+            }}
+          >
             <div
-              className={cn(
-                'h-full rounded-full transition-all duration-500',
-                card.usedPercent > 80
-                  ? 'bg-red-400'
-                  : card.usedPercent > 50
-                  ? 'bg-amber-300'
-                  : isLightColor(card.color)
-                  ? 'bg-gray-800'
-                  : 'bg-white'
-              )}
-              style={{ width: `${Math.max(2, 100 - card.usedPercent)}%` }}
-            />
+              style={{
+                width: 20, height: 15,
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(255,220,100,0.6), rgba(255,180,0,0.4))',
+                border: '1px solid rgba(255,255,255,0.3)',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 2,
+                padding: 3,
+              }}
+            >
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />
+              ))}
+            </div>
           </div>
-        )}
-        {card.expiry_date && (
-          <div className={cn('flex items-center gap-1 text-[10px]', subtextColor)}>
-            <Calendar size={9} />
-            <span>{format(new Date(card.expiry_date), 'MM/yyyy')}</span>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

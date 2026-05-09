@@ -1,11 +1,9 @@
 import { Barcode, Minus, Archive, RotateCcw, Pencil } from 'lucide-react'
 import { useCardStore } from '../../store/useCardStore'
 import { useArchiveCard, useRestoreCard } from '../../hooks/useCards'
-import { usePrivacyStore } from '../../store/usePrivacyStore'
 import type { CardWithStats } from '../../types/app'
 import { useTranslation } from '../../hooks/useTranslation'
 import { toast } from 'sonner'
-import { cn } from '../../lib/utils'
 
 interface CardActionsProps {
   card: CardWithStats
@@ -16,10 +14,7 @@ export function CardActions({ card, archived = false }: CardActionsProps) {
   const { enterFocusMode, openSpendSheet, openEditCard } = useCardStore()
   const { mutate: archiveCard, isPending: archiving } = useArchiveCard()
   const { mutate: restoreCard, isPending: restoring } = useRestoreCard()
-  const { maskAmount } = usePrivacyStore()
   const t = useTranslation()
-
-  const isBalanceCard = card.initial_balance > 0
 
   function handleArchive() {
     archiveCard(card.id, {
@@ -35,111 +30,147 @@ export function CardActions({ card, archived = false }: CardActionsProps) {
     })
   }
 
-  return (
-    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 mx-4">
-      {/* Card summary */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-white font-bold text-lg">{card.name}</div>
-          {card.description && (
-            <div className="text-white/60 text-xs mt-0.5">{card.description}</div>
-          )}
-        </div>
-        {isBalanceCard && (
-          <div className="text-right">
-            <div className="text-white font-black text-xl">
-              {maskAmount(card.current_balance, card.currency)}
-            </div>
-            <div className="text-white/50 text-xs">{t.cards.remaining}</div>
-          </div>
+  const btnBase: React.CSSProperties = {
+    flex: 1,
+    height: 52,
+    borderRadius: 16,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    fontSize: 13,
+    fontWeight: 500,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    border: '1px solid transparent',
+    transition: 'all 0.2s cubic-bezier(.34,1.56,.64,1)',
+  }
+
+  if (!archived) {
+    return (
+      <div style={{ display: 'flex', gap: 10, padding: '20px 24px 0' }}>
+        {/* Barcode — PRIMARY */}
+        <button
+          onClick={enterFocusMode}
+          style={{
+            ...btnBase,
+            background: 'var(--accent)',
+            color: '#0a0a12',
+            fontWeight: 600,
+            borderColor: 'transparent',
+          }}
+          className="active:scale-95"
+        >
+          <Barcode size={17} strokeWidth={2} />
+          {t.actions.barcode}
+        </button>
+
+        {/* Spend — only for balance cards */}
+        {card.initial_balance > 0 && (
+          <button
+            onClick={openSpendSheet}
+            disabled={card.current_balance <= 0}
+            style={{
+              ...btnBase,
+              background: 'var(--surface2)',
+              color: 'var(--text)',
+              borderColor: 'var(--border)',
+            }}
+            className="active:scale-95 disabled:opacity-40"
+          >
+            <Minus size={17} strokeWidth={2} />
+            {t.actions.spend}
+          </button>
         )}
-      </div>
 
-      {/* Actions */}
-      {!archived ? (
-        <div className={cn('grid gap-2', isBalanceCard ? 'grid-cols-4' : 'grid-cols-3')}>
-          <ActionButton
-            icon={<Barcode size={20} />}
-            label={t.actions.barcode}
-            onClick={enterFocusMode}
-            primary
-          />
-          {isBalanceCard && (
-            <ActionButton
-              icon={<Minus size={20} />}
-              label={t.actions.spend}
-              onClick={openSpendSheet}
-              disabled={card.current_balance <= 0}
-            />
+        {/* Edit */}
+        <button
+          onClick={() => openEditCard(card)}
+          style={{
+            ...btnBase,
+            background: 'var(--surface2)',
+            color: 'var(--text)',
+            borderColor: 'var(--border)',
+          }}
+          className="active:scale-95"
+        >
+          <Pencil size={17} strokeWidth={2} />
+          {t.actions.edit}
+        </button>
+
+        {/* Archive — DANGER */}
+        <button
+          onClick={handleArchive}
+          disabled={archiving}
+          style={{
+            ...btnBase,
+            background: 'rgba(255,95,109,0.08)',
+            color: 'var(--danger)',
+            borderColor: 'rgba(255,95,109,0.2)',
+          }}
+          className="active:scale-95 disabled:opacity-40"
+        >
+          {archiving ? (
+            <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--danger)', borderTopColor: 'transparent' }} />
+          ) : (
+            <Archive size={17} strokeWidth={2} />
           )}
-          <ActionButton
-            icon={<Pencil size={20} />}
-            label={t.actions.edit}
-            onClick={() => openEditCard(card)}
-          />
-          <ActionButton
-            icon={<Archive size={20} />}
-            label={t.actions.archive}
-            onClick={handleArchive}
-            loading={archiving}
-            variant="danger"
-          />
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <ActionButton
-            icon={<Barcode size={20} />}
-            label={t.actions.barcode}
-            onClick={enterFocusMode}
-            primary
-          />
-          <ActionButton
-            icon={<Pencil size={20} />}
-            label={t.actions.edit}
-            onClick={() => openEditCard(card)}
-          />
-          <ActionButton
-            icon={<RotateCcw size={20} />}
-            label={t.actions.restore}
-            onClick={handleRestore}
-            loading={restoring}
-          />
-        </div>
-      )}
-    </div>
-  )
-}
+          {t.actions.archive}
+        </button>
+      </div>
+    )
+  }
 
-interface ActionButtonProps {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  primary?: boolean
-  variant?: 'default' | 'danger'
-  disabled?: boolean
-  loading?: boolean
-}
-
-function ActionButton({ icon, label, onClick, primary, variant = 'default', disabled, loading }: ActionButtonProps) {
+  /* Archived card: Barcode + Edit + Restore */
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={cn(
-        'flex flex-col items-center gap-1.5 py-3 rounded-2xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-40',
-        primary
-          ? 'bg-white text-indigo-700 shadow-sm'
-          : variant === 'danger'
-          ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
-          : 'bg-white/15 text-white hover:bg-white/25'
-      )}
-    >
-      {loading ? (
-        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      ) : (
-        icon
-      )}
-      {label}
-    </button>
+    <div style={{ display: 'flex', gap: 10, padding: '20px 24px 0' }}>
+      <button
+        onClick={enterFocusMode}
+        style={{
+          ...btnBase,
+          background: 'var(--accent)',
+          color: '#0a0a12',
+          fontWeight: 600,
+          borderColor: 'transparent',
+        }}
+        className="active:scale-95"
+      >
+        <Barcode size={17} strokeWidth={2} />
+        {t.actions.barcode}
+      </button>
+
+      <button
+        onClick={() => openEditCard(card)}
+        style={{
+          ...btnBase,
+          background: 'var(--surface2)',
+          color: 'var(--text)',
+          borderColor: 'var(--border)',
+        }}
+        className="active:scale-95"
+      >
+        <Pencil size={17} strokeWidth={2} />
+        {t.actions.edit}
+      </button>
+
+      <button
+        onClick={handleRestore}
+        disabled={restoring}
+        style={{
+          ...btnBase,
+          background: 'rgba(124,109,250,0.12)',
+          color: 'var(--accent2)',
+          borderColor: 'rgba(124,109,250,0.2)',
+        }}
+        className="active:scale-95 disabled:opacity-40"
+      >
+        {restoring ? (
+          <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }} />
+        ) : (
+          <RotateCcw size={17} strokeWidth={2} />
+        )}
+        {t.actions.restore}
+      </button>
+    </div>
   )
 }

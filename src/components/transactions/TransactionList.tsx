@@ -1,3 +1,4 @@
+import { CreditCard } from 'lucide-react'
 import { useTransactions, useRealtimeTransactions } from '../../hooks/useTransactions'
 import { timeAgo, formatCurrency } from '../../lib/utils'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -9,16 +10,20 @@ interface TransactionListProps {
 
 export function TransactionList({ cardId }: TransactionListProps) {
   const { data: transactions, isLoading } = useTransactions(cardId)
-  const t = useTranslation()
   useRealtimeTransactions(cardId)
+  const t = useTranslation()
 
   if (!cardId) return null
 
   if (isLoading) {
     return (
-      <div className="px-4 space-y-2">
+      <div className="space-y-2">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-14 bg-white/5 rounded-2xl animate-pulse" />
+          <div
+            key={i}
+            className="h-14 rounded-2xl animate-pulse"
+            style={{ background: 'var(--surface2)' }}
+          />
         ))}
       </div>
     )
@@ -26,22 +31,31 @@ export function TransactionList({ cardId }: TransactionListProps) {
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="px-4 py-6 text-center">
-        <p className="text-white/30 text-sm">{t.transactions.empty}</p>
+      <div className="flex flex-col items-center justify-center py-8 gap-3">
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: 52, height: 52,
+            borderRadius: '50%',
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            marginBottom: 4,
+          }}
+        >
+          <CreditCard size={22} style={{ color: 'var(--muted)' }} strokeWidth={1.5} />
+        </div>
+        <p className="text-[13px]" style={{ color: 'var(--muted)' }}>
+          {t.transactions.empty}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="px-4">
-      <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-        {t.transactions.title}
-      </h3>
-      <div className="space-y-2">
-        {transactions.map((tx) => (
-          <TransactionItem key={tx.id} tx={tx} />
-        ))}
-      </div>
+    <div className="space-y-2">
+      {transactions.map((tx) => (
+        <TransactionItem key={tx.id} tx={tx} />
+      ))}
     </div>
   )
 }
@@ -57,27 +71,59 @@ function TransactionItem({ tx }: { tx: TransactionWithUser }) {
     .slice(0, 2)
 
   return (
-    <div className="flex items-center gap-3 bg-white/5 hover:bg-white/8 rounded-2xl px-4 py-3 transition-colors">
+    <div
+      className="flex items-center gap-3.5 transition-colors cursor-pointer"
+      style={{
+        padding: '14px 16px',
+        background: 'var(--surface2)',
+        borderRadius: 14,
+        border: '1px solid var(--border)',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface2)')}
+    >
       {/* Avatar */}
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-        style={{ backgroundColor: user.avatar_color }}
+        className="flex items-center justify-center text-white text-xs font-bold shrink-0"
+        style={{
+          width: 40, height: 40,
+          borderRadius: 12,
+          backgroundColor: user.avatar_color,
+          fontSize: 14,
+        }}
       >
         {initials}
       </div>
 
-      {/* Details */}
+      {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-white text-sm font-medium truncate">{user.display_name}</span>
-          <span className="text-red-400 font-bold text-sm shrink-0 tabular-nums">
-            -{formatCurrency(tx.amount)}
-          </span>
+        <div
+          className="text-[14px] font-medium mb-0.5 truncate"
+          style={{ color: 'var(--text)' }}
+        >
+          {user.display_name}
         </div>
-        <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-white/40 text-xs truncate">{tx.note ?? t.transactions.defaultNote}</span>
-          <span className="text-white/30 text-xs shrink-0">{timeAgo(tx.created_at)}</span>
+        <div
+          className="text-[11px] truncate"
+          style={{
+            fontFamily: "'DM Mono', monospace",
+            color: 'var(--muted)',
+          }}
+        >
+          {tx.note ?? t.transactions.defaultNote} · {timeAgo(tx.created_at)}
         </div>
+      </div>
+
+      {/* Amount */}
+      <div
+        className="font-medium tabular-nums shrink-0"
+        style={{
+          fontFamily: "'DM Mono', monospace",
+          fontSize: 14,
+          color: '#ff7b87',
+        }}
+      >
+        −{formatCurrency(tx.amount)}
       </div>
     </div>
   )
