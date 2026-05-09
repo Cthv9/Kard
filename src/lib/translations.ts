@@ -44,6 +44,13 @@ const it = {
     authorValue: 'Kard Team',
     privacyMode: 'Modalità privacy',
     privacyModeDesc: 'Nascondi i saldi nella schermata principale',
+    security: 'Sicurezza',
+    biometricTitle: 'Sblocco biometrico',
+    biometricDesc: 'Usa impronta digitale o Face ID per sbloccare l\'app dopo 30 secondi in background',
+    biometricNotSupported: 'Non supportato',
+    biometricEnabled: 'Biometrico attivato',
+    biometricDisabled: 'Biometrico disattivato',
+    biometricSetupError: 'Impossibile configurare il biometrico',
   },
   cards: {
     noActive: 'Nessuna carta attiva',
@@ -172,6 +179,12 @@ const it = {
     error: 'Errore',
     noWalletData: 'Nessun dato wallet',
   },
+  biometricLock: {
+    subtitle: 'Sblocca per accedere al tuo portafoglio',
+    unlockBtn: 'Sblocca con impronta',
+    usePassword: 'Usa email e password',
+    error: 'Verifica fallita, riprova',
+  },
 }
 
 type Translations = typeof it
@@ -220,6 +233,13 @@ const en: Translations = {
     authorValue: 'Kard Team',
     privacyMode: 'Privacy mode',
     privacyModeDesc: 'Hide balances on the main screen',
+    security: 'Security',
+    biometricTitle: 'Biometric unlock',
+    biometricDesc: 'Use fingerprint or Face ID to unlock the app after 30 seconds in background',
+    biometricNotSupported: 'Not supported',
+    biometricEnabled: 'Biometric enabled',
+    biometricDisabled: 'Biometric disabled',
+    biometricSetupError: 'Could not set up biometric authentication',
   },
   cards: {
     noActive: 'No active cards',
@@ -347,6 +367,12 @@ const en: Translations = {
     saving: 'Saving...',
     error: 'Error',
     noWalletData: 'No wallet data',
+  },
+  biometricLock: {
+    subtitle: 'Unlock to access your wallet',
+    unlockBtn: 'Unlock with fingerprint',
+    usePassword: 'Use email and password',
+    error: 'Verification failed, try again',
   },
 }
 
