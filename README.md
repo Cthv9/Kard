@@ -16,7 +16,7 @@ App web mobile-first per la gestione condivisa di carte prepagate e voucher con 
 
 | Layer | Tecnologia |
 |-------|------------|
-| Frontend | React 18 + TypeScript + Vite |
+| Frontend | React 19 + TypeScript + Vite |
 | Stili | Tailwind CSS |
 | Backend | Supabase (PostgreSQL + Realtime + Auth) |
 | State | Zustand + TanStack Query |
@@ -61,8 +61,7 @@ Il sito sarà disponibile su: `https://<tuo-username>.github.io/Kard/`
 
 ---
 
-> **Nota:** Il branch contiene già una build pre-compilata nella cartella `dist/`.  
-> Questa versione mostra una schermata "App non configurata" finché non aggiungi i secret e ri-esegui il workflow, che produrrà una build funzionante con le tue credenziali.
+> **Nota:** Senza i secret Supabase il sito mostrerà una schermata "App non configurata". Aggiungi i secret al passo 3 e rilancia il workflow per ottenere la build funzionante.
 
 ## Sviluppo locale
 
@@ -100,5 +99,5 @@ src/
 supabase/
 └── migrations/        # SQL da applicare al progetto Supabase
 dist/
-└── ...                # Build pre-compilata (placeholder senza credenziali)
+└── ...                # Build generata dal workflow GitHub Actions
 ```
