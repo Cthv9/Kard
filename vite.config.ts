@@ -12,10 +12,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       workbox: {
-        // Activate new service worker immediately without waiting for all tabs to close
+        // skipWaiting: activate new SW quickly, but WITHOUT clientsClaim so
+        // existing open pages are NOT taken over and forced to reload.
+        // Users get the update silently the next time they open the app fresh.
         skipWaiting: true,
-        clientsClaim: true,
-        // Never cache Supabase API calls — always go to network
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
