@@ -3,6 +3,7 @@ import { X, Minus } from 'lucide-react'
 import { useCardStore } from '../../store/useCardStore'
 import { useDeductCredit } from '../../hooks/useTransactions'
 import { formatCurrency } from '../../lib/utils'
+import { useTranslation } from '../../hooks/useTranslation'
 import type { CardWithStats } from '../../types/app'
 import { toast } from 'sonner'
 
@@ -15,6 +16,7 @@ const QUICK_AMOUNTS = [5, 10, 20, 50]
 export function SpendSheet({ card }: SpendSheetProps) {
   const { isSpendSheetOpen, closeSpendSheet } = useCardStore()
   const { mutate: deduct, isPending } = useDeductCredit()
+  const t = useTranslation()
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
 
@@ -30,7 +32,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
       { cardId: card.id, amount: numAmount, note: note || undefined },
       {
         onSuccess: () => {
-          toast.success(`-${formatCurrency(numAmount)} da "${card.name}"`)
+          toast.success(t.spend.success(formatCurrency(numAmount), card.name))
           setAmount('')
           setNote('')
           closeSpendSheet()
@@ -55,9 +57,9 @@ export function SpendSheet({ card }: SpendSheetProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Registra spesa</h3>
+            <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{t.spend.title}</h3>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Saldo attuale: {formatCurrency(card.current_balance, card.currency)}
+              {t.spend.currentBalance(formatCurrency(card.current_balance, card.currency))}
             </p>
           </div>
           <button
@@ -71,7 +73,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount input */}
           <div>
-            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Importo (€)</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>{t.spend.amountLabel}</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-bold text-lg">€</span>
               <input
@@ -111,13 +113,13 @@ export function SpendSheet({ card }: SpendSheetProps) {
           {/* Note */}
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-              Nota (opzionale)
+              {t.spend.noteLabel}
             </label>
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="es. Supermercato"
+              placeholder={t.spend.notePlaceholder}
               maxLength={100}
               className="w-full bg-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm outline-none border border-white/20 focus:border-indigo-400 transition-colors"
             />
@@ -128,7 +130,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
             <div className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
               <div className="flex items-center gap-2 text-white/70 text-sm">
                 <Minus size={14} className="text-red-400" />
-                <span>Nuovo saldo</span>
+                <span>{t.spend.newBalance}</span>
               </div>
               <span className="text-white font-bold">
                 {formatCurrency(newBalance, card.currency)}
@@ -141,7 +143,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
             disabled={!isValid || isPending}
             className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-white/20 text-white font-bold py-4 rounded-2xl text-base transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isPending ? 'Salvataggio...' : 'Conferma spesa'}
+            {isPending ? t.spend.saving : t.spend.confirmBtn}
           </button>
         </form>
       </div>

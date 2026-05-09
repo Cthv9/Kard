@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
@@ -18,7 +18,8 @@ import { SettingsPage } from './pages/SettingsPage'
 function ThemeBootstrap() {
   const theme = useSettingsStore((s) => s.theme)
 
-  useEffect(() => {
+  // useLayoutEffect fires synchronously before paint → no flash of wrong theme
+  useLayoutEffect(() => {
     const html = document.documentElement
     const apply = (isDark: boolean) => html.classList.toggle('light', !isDark)
 

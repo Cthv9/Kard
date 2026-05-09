@@ -1,11 +1,13 @@
 import { Header } from '../components/layout/Header'
 import { useStats } from '../hooks/useStats'
 import { formatCurrency } from '../lib/utils'
+import { useTranslation } from '../hooks/useTranslation'
 import { TrendingDown, CreditCard, Archive } from 'lucide-react'
 import type { UserSpending } from '../types/app'
 
 export function StatsPage() {
   const { data: stats, isLoading } = useStats()
+  const t = useTranslation()
 
   if (isLoading || !stats) {
     return (
@@ -27,13 +29,13 @@ export function StatsPage() {
         {/* Total credit widget */}
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-5">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-            Credito totale
+            {t.stats.totalCredit}
           </p>
           <div className="text-4xl font-black text-white mb-1">
             {formatCurrency(stats.totalRemaining)}
           </div>
           <div className="text-white/50 text-sm mb-4">
-            di {formatCurrency(stats.totalInitial)} iniziali
+            {t.stats.of} {formatCurrency(stats.totalInitial)} {t.stats.initial}
           </div>
 
           {/* Global progress bar */}
@@ -47,8 +49,8 @@ export function StatsPage() {
             />
           </div>
           <div className="flex justify-between text-white/30 text-xs mt-1.5">
-            <span>{usedPercent.toFixed(0)}% utilizzato</span>
-            <span>{formatCurrency(totalSpent)} spesi</span>
+            <span>{t.stats.used(usedPercent.toFixed(0))}</span>
+            <span>{t.stats.spent(formatCurrency(totalSpent))}</span>
           </div>
         </div>
 
@@ -56,13 +58,13 @@ export function StatsPage() {
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             icon={<CreditCard size={18} />}
-            label="Carte attive"
+            label={t.stats.activeCards}
             value={String(stats.activeCardCount)}
             color="#6366f1"
           />
           <StatCard
             icon={<Archive size={18} />}
-            label="Archiviate"
+            label={t.stats.archived}
             value={String(stats.archivedCardCount)}
             color="#8b5cf6"
           />
@@ -74,7 +76,7 @@ export function StatsPage() {
             <div className="flex items-center gap-2 mb-4">
               <TrendingDown size={16} className="text-white/60" />
               <p className="text-white/60 text-xs font-semibold uppercase tracking-wider">
-                Spese per utente
+                {t.stats.userSpending}
               </p>
             </div>
 
@@ -87,7 +89,7 @@ export function StatsPage() {
                 ))}
               {stats.userSpending.every((u) => u.totalSpent === 0) && (
                 <p className="text-white/30 text-sm text-center py-2">
-                  Nessuna spesa ancora
+                  {t.stats.noSpending}
                 </p>
               )}
             </div>
@@ -99,6 +101,7 @@ export function StatsPage() {
 }
 
 function UserSpendRow({ u, total }: { u: UserSpending; total: number }) {
+  const t = useTranslation()
   const pct = total > 0 ? (u.totalSpent / total) * 100 : 0
   const initials = u.profile.display_name
     .split(' ')
@@ -124,7 +127,7 @@ function UserSpendRow({ u, total }: { u: UserSpending; total: number }) {
             </span>
           </div>
           <span className="text-white/40 text-xs">
-            {u.transactionCount} {u.transactionCount === 1 ? 'transazione' : 'transazioni'}
+            {t.stats.transactions(u.transactionCount)}
           </span>
         </div>
       </div>
