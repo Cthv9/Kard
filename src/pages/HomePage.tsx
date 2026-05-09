@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { CardDeck } from '../components/cards/CardDeck'
 import { CardActions } from '../components/cards/CardActions'
@@ -14,45 +15,127 @@ import { useBackButton } from '../hooks/useBackButton'
 export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
   const {
-    selectedCardId, selectCard,
+    selectedCardId, selectCard, openAddCard,
     isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, editingCard,
   } = useCardStore()
   useRealtimeCards()
   useBackButton()
 
-  // Auto-select first card
   useEffect(() => {
-    if (cards.length > 0 && !selectedCardId) {
-      selectCard(cards[0].id)
-    }
+    if (cards.length > 0 && !selectedCardId) selectCard(cards[0].id)
   }, [cards, selectedCardId, selectCard])
 
   const selectedCard = cards.find((c) => c.id === selectedCardId)
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
-        <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg)' }}
+      >
+        <div
+          className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
+        />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'var(--page-bg)' }}>
-      <Header />
+    <div
+      className="min-h-screen relative"
+      style={{ background: 'var(--bg)', paddingBottom: 120 }}
+    >
+      {/* Ambient orbs */}
+      <div className="ambient" />
 
-      <main className="px-0 pt-2">
-        {/* Card fan deck */}
+      {/* Page content (above ambient) */}
+      <div className="relative" style={{ zIndex: 1 }}>
+        <Header cardCount={cards.length} />
+
+        {/* Section label */}
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: '0 24px 16px' }}
+        >
+          <span
+            className="text-[12px] font-semibold uppercase"
+            style={{ letterSpacing: '1.5px', color: 'var(--muted)' }}
+          >
+            Le tue carte
+          </span>
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize: 11,
+              color: 'var(--muted2)',
+            }}
+          >
+            Scorri per scegliere
+          </span>
+        </div>
+
+        {/* Carousel */}
         <CardDeck cards={cards} />
 
-        {/* Selected card actions */}
+        {/* Quick actions */}
+        {selectedCard && <CardActions card={selectedCard} />}
+
+        {/* Divider */}
+        <div
+          style={{
+            margin: '28px 24px 0',
+            height: 1,
+            background: 'var(--border)',
+          }}
+        />
+
+        {/* Transactions section */}
         {selectedCard && (
-          <div className="mt-4 space-y-3">
-            <CardActions card={selectedCard} />
+          <div style={{ padding: '22px 24px 0' }}>
+            <div
+              className="flex items-center justify-between"
+              style={{ marginBottom: 16 }}
+            >
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
+                Attività — {selectedCard.name}
+              </span>
+              <span
+                className="text-[12px] font-medium cursor-pointer"
+                style={{ color: 'var(--accent2)' }}
+              >
+                Vedi tutto
+              </span>
+            </div>
             <TransactionList cardId={selectedCard.id} />
           </div>
         )}
-      </main>
+      </div>
+
+      {/* FAB — add card */}
+      <button
+        onClick={openAddCard}
+        className="active:scale-95 transition-transform"
+        style={{
+          position: 'fixed',
+          bottom: 92,
+          right: 24,
+          zIndex: 10,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: 'var(--accent)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 24px rgba(200,255,87,0.35)',
+        }}
+        title="Aggiungi carta"
+      >
+        <Plus size={22} strokeWidth={2.5} style={{ color: '#0a0a12' }} />
+      </button>
 
       {/* Overlays */}
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}

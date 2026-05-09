@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/Kard/apple-touch-icon-180x180.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <meta name="theme-color" content="#0f0826" />
+    <meta name="theme-color" content="#0a0a12" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -16,16 +16,19 @@
       content="
         default-src 'self';
         script-src 'self';
-        style-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src 'self' data: blob:;
         connect-src 'self' https://*.supabase.co wss://*.supabase.co;
-        font-src 'self';
+        font-src 'self' https://fonts.gstatic.com;
         worker-src 'self';
         object-src 'none';
         base-uri 'self';
         form-action 'self';
       "
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <title>Kard — Portafoglio Condiviso</title>
   </head>
   <body>

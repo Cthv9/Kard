@@ -72,10 +72,13 @@ function AppRoutes() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
         <div className="text-center">
-          <div className="w-14 h-14 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Caricamento...</p>
+          <div
+            className="w-14 h-14 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+            style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
+          />
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>Caricamento...</p>
         </div>
       </div>
     )
@@ -101,19 +104,20 @@ function AppRoutes() {
 
 function NotConfigured() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f0826] to-[#1a0f3d] flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
       <div className="text-center max-w-sm">
         <div className="text-5xl mb-4">⚙️</div>
-        <h2 className="text-white font-black text-2xl mb-2">App non configurata</h2>
-        <p className="text-white/60 text-sm mb-6">
+        <h2 className="text-2xl font-black mb-2" style={{ color: 'var(--text)' }}>App non configurata</h2>
+        <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>
           Le variabili d'ambiente Supabase non sono state trovate. Aggiungi{' '}
-          <code className="text-indigo-300">VITE_SUPABASE_URL</code> e{' '}
-          <code className="text-indigo-300">VITE_SUPABASE_ANON_KEY</code> ai secret di GitHub Actions,
+          <code style={{ color: 'var(--accent2)' }}>VITE_SUPABASE_URL</code> e{' '}
+          <code style={{ color: 'var(--accent2)' }}>VITE_SUPABASE_ANON_KEY</code> ai secret di GitHub Actions,
           poi ri-esegui il workflow.
         </p>
         <a
           href="https://github.com"
-          className="inline-block bg-indigo-500 text-white font-bold px-6 py-3 rounded-2xl text-sm hover:bg-indigo-600 transition-colors"
+          className="inline-block font-bold px-6 py-3 rounded-2xl text-sm transition-colors active:scale-95"
+          style={{ background: 'var(--accent)', color: '#0a0a12' }}
         >
           Apri GitHub Settings
         </a>
