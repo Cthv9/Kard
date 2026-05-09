@@ -13,8 +13,8 @@ export function useAuthInit() {
       if (useAuthStore.getState().isLoading) setLoading(false)
     }
 
-    // Hard cap: never spin longer than 10s regardless of network state.
-    const safetyTimer = setTimeout(unlock, 10_000)
+    // Hard cap: never spin longer than 8s regardless of network state.
+    const safetyTimer = setTimeout(unlock, 8_000)
 
     // Track which user's profile fetch is the most recent so stale results
     // from a previous (aborted) fetch don't overwrite newer data.
@@ -25,8 +25,7 @@ export function useAuthInit() {
       const myId = userId
 
       const controller = new AbortController()
-      // 8s per-request cap — mirrors iOS TCP half-open window.
-      const requestTimer = setTimeout(() => controller.abort(), 8_000)
+      const requestTimer = setTimeout(() => controller.abort(), 6_000)
 
       try {
         const { data } = await supabase
@@ -36,7 +35,6 @@ export function useAuthInit() {
           .abortSignal(controller.signal)
           .single()
 
-        // Discard result if a newer request already completed.
         if (myId === latestUserId) {
           setProfile(data ?? null)
         }
@@ -50,11 +48,18 @@ export function useAuthInit() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
+        // TOKEN_REFRESHED means only the auth token changed — the profile
+        // data hasn't changed, so skip the network round-trip if we already
+        // have a profile. This eliminates any perceived delay on resume.
+        if (event === 'TOKEN_REFRESHED' && useAuthStore.getState().profile) {
+          unlock()
+          return
+        }
         await loadProfile(session.user.id)
       } else {
         setProfile(null)
