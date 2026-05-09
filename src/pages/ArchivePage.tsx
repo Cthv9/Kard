@@ -7,12 +7,14 @@ import { useArchivedCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { CardTile } from '../components/cards/CardTile'
 import { usePrivacyStore } from '../store/usePrivacyStore'
+import { useTranslation } from '../hooks/useTranslation'
 import { Archive } from 'lucide-react'
 
 export function ArchivePage() {
   const { data: cards = [], isLoading } = useArchivedCards()
   const { selectCard, selectedCardId, isFocusMode } = useCardStore()
   const { maskAmount } = usePrivacyStore()
+  const t = useTranslation()
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const selectedCard = cards.find((c) => c.id === selectedCardId)
@@ -39,14 +41,14 @@ export function ArchivePage() {
         <div className="flex items-center gap-2 mb-4">
           <Archive size={16} className="text-white/60" />
           <h2 className="text-white/80 text-sm font-semibold">
-            Archivio — {cards.length} {cards.length === 1 ? 'carta' : 'carte'}
+            {t.archive.title} — {t.archive.cards(cards.length)}
           </h2>
         </div>
 
         {cards.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-5xl mb-3">📦</div>
-            <p className="text-white/50 text-sm">Nessuna carta archiviata</p>
+            <p className="text-white/50 text-sm">{t.archive.empty}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -73,7 +75,7 @@ export function ArchivePage() {
                         {maskAmount(card.current_balance, card.currency)}
                       </p>
                       <p className="text-white/30 text-xs">
-                        archiviata
+                        {t.archive.archived}
                       </p>
                     </div>
                   </div>

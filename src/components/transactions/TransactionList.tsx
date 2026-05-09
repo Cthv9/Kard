@@ -1,5 +1,6 @@
 import { useTransactions, useRealtimeTransactions } from '../../hooks/useTransactions'
 import { timeAgo, formatCurrency } from '../../lib/utils'
+import { useTranslation } from '../../hooks/useTranslation'
 import type { TransactionWithUser } from '../../types/app'
 
 interface TransactionListProps {
@@ -8,6 +9,7 @@ interface TransactionListProps {
 
 export function TransactionList({ cardId }: TransactionListProps) {
   const { data: transactions, isLoading } = useTransactions(cardId)
+  const t = useTranslation()
   useRealtimeTransactions(cardId)
 
   if (!cardId) return null
@@ -25,7 +27,7 @@ export function TransactionList({ cardId }: TransactionListProps) {
   if (!transactions || transactions.length === 0) {
     return (
       <div className="px-4 py-6 text-center">
-        <p className="text-white/30 text-sm">Nessuna transazione ancora</p>
+        <p className="text-white/30 text-sm">{t.transactions.empty}</p>
       </div>
     )
   }
@@ -33,7 +35,7 @@ export function TransactionList({ cardId }: TransactionListProps) {
   return (
     <div className="px-4">
       <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
-        Storico
+        {t.transactions.title}
       </h3>
       <div className="space-y-2">
         {transactions.map((tx) => (
@@ -45,6 +47,7 @@ export function TransactionList({ cardId }: TransactionListProps) {
 }
 
 function TransactionItem({ tx }: { tx: TransactionWithUser }) {
+  const t = useTranslation()
   const user = tx.profile
   const initials = user.display_name
     .split(' ')
@@ -72,7 +75,7 @@ function TransactionItem({ tx }: { tx: TransactionWithUser }) {
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-white/40 text-xs truncate">{tx.note ?? 'Spesa'}</span>
+          <span className="text-white/40 text-xs truncate">{tx.note ?? t.transactions.defaultNote}</span>
           <span className="text-white/30 text-xs shrink-0">{timeAgo(tx.created_at)}</span>
         </div>
       </div>
