@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, Camera } from 'lucide-react'
 import { useAddCard } from '../../hooks/useCards'
 import { useCardStore } from '../../store/useCardStore'
 import { CARD_COLORS } from '../../types/app'
@@ -7,13 +7,20 @@ import { BarcodeDisplay } from '../barcode/BarcodeDisplay'
 import { toast } from 'sonner'
 
 export function AddCardForm() {
-  const { closeAddCard } = useCardStore()
+  const { closeAddCard, openScanner, scannedCode, clearScannedCode } = useCardStore()
   const { mutate: addCard, isPending } = useAddCard()
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [code, setCode] = useState('')
-  const [codeType, setCodeType] = useState<'barcode' | 'qrcode' | 'text'>('barcode')
+  const [code, setCode] = useState(scannedCode?.code ?? '')
+  const [codeType, setCodeType] = useState<'barcode' | 'qrcode' | 'text'>(
+    scannedCode?.codeType ?? 'barcode'
+  )
+
+  // Consume scannedCode from store on mount (set before form opened via scanner)
+  useEffect(() => {
+    if (scannedCode) clearScannedCode()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [initialBalance, setInitialBalance] = useState('')
   const [currency, setCurrency] = useState('EUR')
   const [color, setColor] = useState<string>(CARD_COLORS[0])
@@ -140,14 +147,24 @@ export function AddCardForm() {
 
           {/* Code value */}
           <Field label="Codice *">
-            <input
-              type="text"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/[^\x20-\x7E]/g, ''))}
-              required
-              placeholder="Inserisci il valore del codice"
-              className="input-dark font-mono"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/[^\x20-\x7E]/g, ''))}
+                required
+                placeholder="Inserisci il valore del codice"
+                className="input-dark font-mono flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => { closeAddCard(); openScanner() }}
+                title="Scansiona con fotocamera"
+                className="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-xl px-3 border border-white/20 transition-colors"
+              >
+                <Camera size={18} />
+              </button>
+            </div>
           </Field>
 
           {/* Live barcode preview */}

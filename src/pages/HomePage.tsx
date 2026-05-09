@@ -3,6 +3,7 @@ import { Header } from '../components/layout/Header'
 import { CardDeck } from '../components/cards/CardDeck'
 import { CardActions } from '../components/cards/CardActions'
 import { AddCardForm } from '../components/cards/AddCardForm'
+import { CardScanner } from '../components/cards/CardScanner'
 import { FocusMode } from '../components/barcode/FocusMode'
 import { SpendSheet } from '../components/transactions/SpendSheet'
 import { TransactionList } from '../components/transactions/TransactionList'
@@ -11,7 +12,7 @@ import { useCardStore } from '../store/useCardStore'
 
 export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
-  const { selectedCardId, selectCard, isFocusMode, isSpendSheetOpen, isAddCardOpen } = useCardStore()
+  const { selectedCardId, selectCard, isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen } = useCardStore()
   useRealtimeCards()
 
   // Auto-select first card
@@ -52,6 +53,7 @@ export function HomePage() {
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}
       {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
       {isAddCardOpen && <AddCardForm />}
+      {isScannerOpen && <CardScanner />}
     </div>
   )
 }

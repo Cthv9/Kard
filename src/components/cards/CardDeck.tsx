@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, ScanLine } from 'lucide-react'
 import { CardTile } from './CardTile'
 import { useCardStore } from '../../store/useCardStore'
 import type { CardWithStats } from '../../types/app'
@@ -9,7 +9,7 @@ interface CardDeckProps {
 }
 
 export function CardDeck({ cards }: CardDeckProps) {
-  const { selectedCardId, selectCard, openAddCard } = useCardStore()
+  const { selectedCardId, selectCard, openAddCard, openScanner } = useCardStore()
   const touchStartX = useRef<number | null>(null)
 
   const selectedIndex = cards.findIndex((c) => c.id === selectedCardId)
@@ -69,14 +69,21 @@ export function CardDeck({ cards }: CardDeckProps) {
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-52 gap-4">
+      <div className="flex flex-col items-center justify-center h-52 gap-3">
         <p className="text-white/50 text-sm">Nessuna carta attiva</p>
         <button
+          onClick={openScanner}
+          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+        >
+          <ScanLine size={16} />
+          Scansiona tessera
+        </button>
+        <button
           onClick={openAddCard}
-          className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95"
         >
           <Plus size={16} />
-          Aggiungi carta
+          Inserisci manualmente
         </button>
       </div>
     )
@@ -124,8 +131,16 @@ export function CardDeck({ cards }: CardDeckProps) {
           />
         ))}
         <button
+          onClick={openScanner}
+          className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center ml-1 transition-all active:scale-90"
+          title="Scansiona tessera"
+        >
+          <ScanLine size={11} />
+        </button>
+        <button
           onClick={openAddCard}
           className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center ml-1 transition-all active:scale-90"
+          title="Aggiungi manualmente"
         >
           <Plus size={12} />
         </button>
