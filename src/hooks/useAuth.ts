@@ -5,64 +5,115 @@ import { queryClient } from '../lib/queryClient'
 
 export function useAuthInit() {
   const { setUser, setSession, setProfile, setLoading } = useAuthStore()
-  // Prevent concurrent loadProfile calls (INITIAL_SESSION + TOKEN_REFRESHED fire together on resume)
   const isFetchingProfile = useRef(false)
 
   useEffect(() => {
-    // Failsafe: if onAuthStateChange never fires (token refresh hanging on slow/offline
-    // network on mobile resume), clear the initial isLoading:true so the spinner doesn't
-    // spin forever. 10 s is generous — normal cold start resolves in < 2 s.
-    const globalTimeoutId = setTimeout(() => setLoading(false), 10_000)
+    // Cold-start safety net: if onAuthStateChange never fires (token refresh hanging
+    // on slow/offline network), unblock the spinner after 10 s.
+    const coldStartTimer = setTimeout(() => {
+      console.log('[Auth] cold-start timer — forcing setLoading(false)')
+      isFetchingProfile.current = false
+      setLoading(false)
+    }, 10_000)
+
+    // Bug 3 fix: reset the dedup lock when the app becomes visible again.
+    // On iOS, if JS was suspended while a fetch was in flight, isFetchingProfile
+    // can stay true permanently. Resetting it here lets TOKEN_REFRESHED start
+    // a fresh fetch on the next resume cycle.
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        console.log('[Auth] app resumed — resetting fetch lock')
+        isFetchingProfile.current = false
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        clearTimeout(globalTimeoutId)
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          // Don't show the loading spinner if we already have profile data (app resume /
-          // TOKEN_REFRESHED). Only show it on first load or after sign-out when profile is null.
-          const hasExistingProfile = useAuthStore.getState().profile !== null
-          await loadProfile(session.user.id, !hasExistingProfile)
-        } else {
-          setProfile(null)
+        console.log('[Auth] onAuthStateChange', { event: _event, hasSession: !!session, t: Date.now() })
+
+        clearTimeout(coldStartTimer)
+
+        // Bug 1 fix: per-event safety net. The cold-start timer is cleared above, so
+        // we create a new one for EACH auth event. If loadProfile hangs (iOS TCP stuck),
+        // this timer unblocks the spinner after 10 s from the last auth event.
+        const eventTimer = setTimeout(() => {
+          console.log('[Auth] per-event timer fired — forcing setLoading(false)')
+          isFetchingProfile.current = false
           setLoading(false)
-          queryClient.clear()
+        }, 10_000)
+
+        try {
+          setSession(session)
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            const hasExistingProfile = useAuthStore.getState().profile !== null
+            console.log('[Auth] hasExistingProfile:', hasExistingProfile)
+            await loadProfile(session.user.id, !hasExistingProfile)
+          } else {
+            setProfile(null)
+            setLoading(false)
+            queryClient.clear()
+          }
+        } finally {
+          clearTimeout(eventTimer)
         }
       }
     )
 
     return () => {
-      clearTimeout(globalTimeoutId)
+      clearTimeout(coldStartTimer)
+      document.removeEventListener('visibilitychange', handleVisibility)
       subscription.unsubscribe()
     }
   }, [setUser, setSession, setProfile, setLoading])
 
   async function loadProfile(userId: string, showLoader = true) {
-    if (isFetchingProfile.current) return   // already in flight — skip
+    if (isFetchingProfile.current) {
+      console.log('[Auth] loadProfile: skipped (lock active)')
+      return
+    }
     isFetchingProfile.current = true
     if (showLoader) setLoading(true)
+    console.log('[Auth] loadProfile: start', { userId, showLoader, t: Date.now() })
 
-    // Hard timeout: if the network hangs (common on mobile app-resume),
-    // abort after 8 s so the spinner doesn't spin forever.
+    // Bug 2 fix: use Promise.race with a timeout that RESOLVES (never rejects).
+    // AbortController alone can't cancel a fetch whose Promise is stuck in a
+    // half-open TCP state after iOS app suspension. Promise.race guarantees the
+    // await always settles after 8 s, so the finally block is always reached.
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null
+
+    const timeoutPromise = new Promise<{ data: null; error: null }>((resolve) => {
+      timeoutHandle = setTimeout(() => {
+        console.log('[Auth] loadProfile: 8 s timeout — aborting fetch')
+        controller.abort()
+        resolve({ data: null, error: null })
+      }, 8000)
+    })
 
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .abortSignal(controller.signal)
-        .single()
-      setProfile(data ?? null)
+      const result = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .abortSignal(controller.signal)
+          .single(),
+        timeoutPromise,
+      ])
+
+      console.log('[Auth] loadProfile: settled', { hasData: !!result?.data, t: Date.now() })
+      setProfile(result?.data ?? null)
     } catch {
-      // Aborted or unexpected error — leave profile as-is so existing users
-      // don't get bounced to OnboardingPage on a bad network moment.
+      // Unexpected error — leave profile as-is so existing users don't get
+      // bounced to OnboardingPage on a transient network error.
+      console.log('[Auth] loadProfile: fetch error (profile unchanged)')
     } finally {
-      clearTimeout(timeoutId)
+      if (timeoutHandle) clearTimeout(timeoutHandle)
       isFetchingProfile.current = false
       setLoading(false)
+      console.log('[Auth] loadProfile: done, setLoading(false)', { t: Date.now() })
     }
   }
 }
