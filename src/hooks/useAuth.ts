@@ -7,16 +7,9 @@ export function useAuthInit() {
   const { setUser, setSession, setProfile, setLoading } = useAuthStore()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
+    // onAuthStateChange fires INITIAL_SESSION immediately, so no need for getSession()
+    // Using both caused a race condition where two loadProfile calls ran simultaneously,
+    // leaving isLoading stuck on true if the second fetch was slow
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session)
@@ -36,13 +29,16 @@ export function useAuthInit() {
 
   async function loadProfile(userId: string) {
     setLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data ?? null)
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data ?? null)
+    } finally {
+      setLoading(false)
+    }
   }
 }
 
