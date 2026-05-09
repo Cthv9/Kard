@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/Kard/apple-touch-icon-180x180.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#0f0826" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -19,6 +20,7 @@
         img-src 'self' data: blob:;
         connect-src 'self' https://*.supabase.co wss://*.supabase.co;
         font-src 'self';
+        worker-src 'self';
         object-src 'none';
         base-uri 'self';
         form-action 'self';
