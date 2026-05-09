@@ -25,14 +25,14 @@ export function ArchivePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f0826] to-[#1a0f3d] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
         <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f0826] to-[#1a0f3d] pb-24">
+    <div className="min-h-screen pb-24" style={{ background: 'var(--page-bg)' }}>
       <Header />
 
       <main className="px-4 pt-2">

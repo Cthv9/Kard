@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { CardWithStats } from '../types/app'
 
 interface ScannedCode {
   code: string
@@ -12,6 +13,7 @@ interface CardStoreState {
   isAddCardOpen: boolean
   isScannerOpen: boolean
   scannedCode: ScannedCode | null
+  editingCard: CardWithStats | null
 
   selectCard: (id: string | null) => void
   enterFocusMode: () => void
@@ -24,6 +26,8 @@ interface CardStoreState {
   closeScanner: () => void
   setScannedCode: (data: ScannedCode) => void
   clearScannedCode: () => void
+  openEditCard: (card: CardWithStats) => void
+  closeEditCard: () => void
 }
 
 export const useCardStore = create<CardStoreState>((set) => ({
@@ -33,16 +37,19 @@ export const useCardStore = create<CardStoreState>((set) => ({
   isAddCardOpen: false,
   isScannerOpen: false,
   scannedCode: null,
+  editingCard: null,
 
   selectCard: (id) => set({ selectedCardId: id }),
   enterFocusMode: () => set({ isFocusMode: true }),
   exitFocusMode: () => set({ isFocusMode: false }),
   openSpendSheet: () => set({ isSpendSheetOpen: true }),
   closeSpendSheet: () => set({ isSpendSheetOpen: false }),
-  openAddCard: () => set({ isAddCardOpen: true }),
+  openAddCard: () => set({ isAddCardOpen: true, editingCard: null }),
   closeAddCard: () => set({ isAddCardOpen: false }),
   openScanner: () => set({ isScannerOpen: true }),
   closeScanner: () => set({ isScannerOpen: false }),
   setScannedCode: (data) => set({ scannedCode: data }),
   clearScannedCode: () => set({ scannedCode: null }),
+  openEditCard: (card) => set({ editingCard: card, isAddCardOpen: true }),
+  closeEditCard: () => set({ editingCard: null, isAddCardOpen: false }),
 }))

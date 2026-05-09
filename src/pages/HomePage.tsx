@@ -9,11 +9,16 @@ import { SpendSheet } from '../components/transactions/SpendSheet'
 import { TransactionList } from '../components/transactions/TransactionList'
 import { useActiveCards, useRealtimeCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
+import { useBackButton } from '../hooks/useBackButton'
 
 export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
-  const { selectedCardId, selectCard, isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen } = useCardStore()
+  const {
+    selectedCardId, selectCard,
+    isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, editingCard,
+  } = useCardStore()
   useRealtimeCards()
+  useBackButton()
 
   // Auto-select first card
   useEffect(() => {
@@ -26,14 +31,14 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0f0826] to-[#1a0f3d] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
         <div className="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f0826] to-[#1a0f3d] pb-24">
+    <div className="min-h-screen pb-24" style={{ background: 'var(--page-bg)' }}>
       <Header />
 
       <main className="px-0 pt-2">
@@ -52,7 +57,7 @@ export function HomePage() {
       {/* Overlays */}
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}
       {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
-      {isAddCardOpen && <AddCardForm />}
+      {(isAddCardOpen || editingCard) && <AddCardForm />}
       {isScannerOpen && <CardScanner />}
     </div>
   )

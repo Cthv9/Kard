@@ -1,16 +1,17 @@
 import { NavLink } from 'react-router-dom'
 import { CreditCard, BarChart2, Archive } from 'lucide-react'
 import { cn } from '../../lib/utils'
-
-const NAV_ITEMS = [
-  { to: '/', icon: CreditCard, label: 'Carte' },
-  { to: '/stats', icon: BarChart2, label: 'Statistiche' },
-  { to: '/archive', icon: Archive, label: 'Archivio' },
-]
+import { useTranslation } from '../../hooks/useTranslation'
 
 export function BottomNav() {
+  const t = useTranslation()
+  const NAV_ITEMS = [
+    { to: '/', icon: CreditCard, label: t.nav.cards },
+    { to: '/stats', icon: BarChart2, label: t.nav.stats },
+    { to: '/archive', icon: Archive, label: t.nav.archive },
+  ]
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 bg-[#0f0826]/90 backdrop-blur-xl border-t border-white/10 safe-bottom">
+    <nav className="fixed bottom-0 inset-x-0 z-30 backdrop-blur-xl border-t safe-bottom" style={{ backgroundColor: 'var(--nav)', borderColor: 'var(--border-subtle)' }}>
       <div className="flex">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink

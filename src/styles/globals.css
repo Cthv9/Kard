@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+/* ── Theme tokens ───────────────────────────────────────────────────────────── */
+:root {
+  /* dark (default) */
+  --page-from:    #0f0826;
+  --page-to:      #1a0f3d;
+  --panel:        #1a1040;
+  --nav:          #0f0826;
+  --border-subtle: rgba(255,255,255,0.1);
+  --hover-item:   rgba(255,255,255,0.08);
+  --text-primary: #ffffff;
+  --text-muted:   rgba(255,255,255,0.6);
+  --input-bg:     rgba(255,255,255,0.1);
+  --input-border: rgba(255,255,255,0.2);
+  --page-bg:      linear-gradient(to bottom, var(--page-from), var(--page-to));
+}
+
+.light {
+  --page-from:    #f0f0f7;
+  --page-to:      #e4dcf5;
+  --panel:        #ffffff;
+  --nav:          #f5f2ff;
+  --border-subtle: rgba(0,0,0,0.08);
+  --hover-item:   rgba(0,0,0,0.05);
+  --text-primary: #0f0826;
+  --text-muted:   rgba(15,8,38,0.55);
+  --input-bg:     rgba(0,0,0,0.04);
+  --input-border: rgba(0,0,0,0.15);
+}
+
+/* Override Tailwind opacity-based utilities for light theme */
+.light .text-white           { color: var(--text-primary) !important; }
+.light [class*="text-white/"]{ color: var(--text-muted)   !important; }
+.light [class*="bg-white/"]  { background-color: var(--hover-item)   !important; }
+.light [class*="border-white/"]{ border-color: var(--border-subtle)  !important; }
+
+/* ── Radix / shadcn tokens (kept for compatibility) ─────────────────────────── */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -24,9 +60,7 @@
     --radius: 1rem;
   }
 
-  * {
-    border-color: hsl(var(--border));
-  }
+  * { border-color: hsl(var(--border)); }
 
   body {
     background-color: hsl(var(--background));
@@ -38,15 +72,27 @@
   }
 }
 
+/* ── Utilities ──────────────────────────────────────────────────────────────── */
+
 /* Safe area support for iOS notch */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Shared dark input style used across forms */
+/* Adaptive input style used across forms */
 .input-dark {
-  @apply w-full bg-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm outline-none border border-white/20 focus:border-indigo-400 transition-colors;
+  width: 100%;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--input-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
 }
+.input-dark::placeholder { color: var(--text-muted); opacity: 0.6; }
+.input-dark:focus { border-color: #818cf8; }
 
 /* Scanner line animation */
 @keyframes scan-line {
