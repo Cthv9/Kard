@@ -10,7 +10,7 @@ export function useStats() {
     queryFn: async (): Promise<WalletStats> => {
       const [cardsResult, txResult, profilesResult] = await Promise.all([
         supabase.from('cards').select('id, initial_balance, current_balance, is_archived'),
-        supabase.from('transactions').select('user_id, amount'),
+        supabase.from('transactions').select('user_id, amount').limit(2000),
         supabase.from('profiles').select('*'),
       ])
 

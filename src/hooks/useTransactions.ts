@@ -12,27 +12,20 @@ export function useTransactions(cardId: string | null) {
     queryKey: txKey(cardId ?? ''),
     enabled: !!cardId,
     queryFn: async (): Promise<TransactionWithUser[]> => {
-      const { data: txData, error: txError } = await supabase
+      // Single JOIN query instead of 2 sequential calls.
+      // transactions.user_id → profiles.id FK enables this (migration 001).
+      const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select('*, profile:profiles!user_id(id, display_name, avatar_color)')
         .eq('card_id', cardId!)
         .order('created_at', { ascending: false })
         .limit(50)
-      if (txError) throw txError
-      if (!txData.length) return []
-
-      const userIds = [...new Set(txData.map((t) => t.user_id))]
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_color')
-        .in('id', userIds)
-      if (profileError) throw profileError
-
-      const profileMap = new Map(profileData.map((p) => [p.id, p]))
-
-      return txData.map((tx) => ({
+      if (error) throw error
+      return (data ?? []).map((tx) => ({
         ...tx,
-        profile: profileMap.get(tx.user_id) ?? {
+        // The FK exists in the DB (migration 001) but isn't reflected in the
+        // auto-generated TS types, so we cast through unknown.
+        profile: (tx.profile as unknown as TransactionWithUser['profile'] | null) ?? {
           display_name: 'Utente',
           avatar_color: '#6366f1',
         },
