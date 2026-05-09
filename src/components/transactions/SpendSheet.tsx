@@ -45,7 +45,8 @@ export function SpendSheet({ card }: SpendSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={closeSpendSheet}>
       <div
-        className="w-full bg-[#1a1040] rounded-t-3xl p-5 shadow-2xl"
+        className="w-full rounded-t-3xl p-5 shadow-2xl"
+        style={{ backgroundColor: 'var(--panel)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -54,8 +55,8 @@ export function SpendSheet({ card }: SpendSheetProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-white font-bold text-lg">Registra spesa</h3>
-            <p className="text-white/50 text-xs">
+            <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Registra spesa</h3>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Saldo attuale: {formatCurrency(card.current_balance, card.currency)}
             </p>
           </div>
@@ -70,7 +71,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount input */}
           <div>
-            <label className="block text-white/70 text-xs font-medium mb-1.5">Importo (€)</label>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Importo (€)</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 font-bold text-lg">€</span>
               <input
@@ -109,7 +110,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
 
           {/* Note */}
           <div>
-            <label className="block text-white/70 text-xs font-medium mb-1.5">
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
               Nota (opzionale)
             </label>
             <input

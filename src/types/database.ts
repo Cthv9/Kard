@@ -94,7 +94,9 @@ export interface Database {
           description?: string | null
           code?: string
           code_type?: 'barcode' | 'qrcode' | 'text'
+          initial_balance?: number
           current_balance?: number
+          currency?: string
           color?: string
           card_number?: string | null
           expiry_date?: string | null

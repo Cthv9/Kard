@@ -64,33 +64,39 @@ export function CardTile({ card, isSelected, onClick, style, className }: CardTi
         </div>
       </div>
 
-      {/* Balance */}
-      <div className="relative">
-        <div className={cn('text-2xl font-black tracking-tight', textColor)}>
-          {maskAmount(card.current_balance, card.currency)}
+      {/* Balance — hidden for loyalty-only cards (initial_balance === 0) */}
+      {card.initial_balance > 0 ? (
+        <div className="relative">
+          <div className={cn('text-2xl font-black tracking-tight', textColor)}>
+            {maskAmount(card.current_balance, card.currency)}
+          </div>
+          <div className={cn('text-xs mt-0.5', subtextColor)}>
+            di {maskAmount(card.initial_balance, card.currency)}
+          </div>
         </div>
-        <div className={cn('text-xs mt-0.5', subtextColor)}>
-          di {maskAmount(card.initial_balance, card.currency)}
-        </div>
-      </div>
+      ) : (
+        <div className="relative" />
+      )}
 
       {/* Bottom: progress bar + expiry */}
       <div className="relative space-y-1.5">
-        <div className={cn('h-1 rounded-full overflow-hidden', isLightColor(card.color) ? 'bg-black/20' : 'bg-white/20')}>
-          <div
-            className={cn(
-              'h-full rounded-full transition-all duration-500',
-              card.usedPercent > 80
-                ? 'bg-red-400'
-                : card.usedPercent > 50
-                ? 'bg-amber-300'
-                : isLightColor(card.color)
-                ? 'bg-gray-800'
-                : 'bg-white'
-            )}
-            style={{ width: `${Math.max(2, 100 - card.usedPercent)}%` }}
-          />
-        </div>
+        {card.initial_balance > 0 && (
+          <div className={cn('h-1 rounded-full overflow-hidden', isLightColor(card.color) ? 'bg-black/20' : 'bg-white/20')}>
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-500',
+                card.usedPercent > 80
+                  ? 'bg-red-400'
+                  : card.usedPercent > 50
+                  ? 'bg-amber-300'
+                  : isLightColor(card.color)
+                  ? 'bg-gray-800'
+                  : 'bg-white'
+              )}
+              style={{ width: `${Math.max(2, 100 - card.usedPercent)}%` }}
+            />
+          </div>
+        )}
         {card.expiry_date && (
           <div className={cn('flex items-center gap-1 text-[10px]', subtextColor)}>
             <Calendar size={9} />

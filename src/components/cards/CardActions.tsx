@@ -1,8 +1,9 @@
-import { Barcode, Minus, Archive, RotateCcw } from 'lucide-react'
+import { Barcode, Minus, Archive, RotateCcw, Pencil } from 'lucide-react'
 import { useCardStore } from '../../store/useCardStore'
 import { useArchiveCard, useRestoreCard } from '../../hooks/useCards'
 import { usePrivacyStore } from '../../store/usePrivacyStore'
 import type { CardWithStats } from '../../types/app'
+import { useTranslation } from '../../hooks/useTranslation'
 import { toast } from 'sonner'
 import { cn } from '../../lib/utils'
 
@@ -12,22 +13,25 @@ interface CardActionsProps {
 }
 
 export function CardActions({ card, archived = false }: CardActionsProps) {
-  const { enterFocusMode, openSpendSheet } = useCardStore()
+  const { enterFocusMode, openSpendSheet, openEditCard } = useCardStore()
   const { mutate: archiveCard, isPending: archiving } = useArchiveCard()
   const { mutate: restoreCard, isPending: restoring } = useRestoreCard()
   const { maskAmount } = usePrivacyStore()
+  const t = useTranslation()
+
+  const isBalanceCard = card.initial_balance > 0
 
   function handleArchive() {
     archiveCard(card.id, {
-      onSuccess: () => toast.success(`"${card.name}" archiviata`),
-      onError: () => toast.error('Errore durante l\'archiviazione'),
+      onSuccess: () => toast.success(t.actions.archiveSuccess(card.name)),
+      onError: () => toast.error(t.actions.archiveError),
     })
   }
 
   function handleRestore() {
     restoreCard(card.id, {
-      onSuccess: () => toast.success(`"${card.name}" ripristinata`),
-      onError: () => toast.error('Errore durante il ripristino'),
+      onSuccess: () => toast.success(t.actions.restoreSuccess(card.name)),
+      onError: () => toast.error(t.actions.restoreError),
     })
   }
 
@@ -41,34 +45,41 @@ export function CardActions({ card, archived = false }: CardActionsProps) {
             <div className="text-white/60 text-xs mt-0.5">{card.description}</div>
           )}
         </div>
-        <div className="text-right">
-          <div className="text-white font-black text-xl">
-            {maskAmount(card.current_balance, card.currency)}
+        {isBalanceCard && (
+          <div className="text-right">
+            <div className="text-white font-black text-xl">
+              {maskAmount(card.current_balance, card.currency)}
+            </div>
+            <div className="text-white/50 text-xs">{t.cards.remaining}</div>
           </div>
-          <div className="text-white/50 text-xs">
-            rimanenti
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Actions */}
       {!archived ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className={cn('grid gap-2', isBalanceCard ? 'grid-cols-4' : 'grid-cols-3')}>
           <ActionButton
             icon={<Barcode size={20} />}
-            label="Barcode"
+            label={t.actions.barcode}
             onClick={enterFocusMode}
             primary
           />
+          {isBalanceCard && (
+            <ActionButton
+              icon={<Minus size={20} />}
+              label={t.actions.spend}
+              onClick={openSpendSheet}
+              disabled={card.current_balance <= 0}
+            />
+          )}
           <ActionButton
-            icon={<Minus size={20} />}
-            label="Spendi"
-            onClick={openSpendSheet}
-            disabled={card.current_balance <= 0}
+            icon={<Pencil size={20} />}
+            label={t.actions.edit}
+            onClick={() => openEditCard(card)}
           />
           <ActionButton
             icon={<Archive size={20} />}
-            label="Archivia"
+            label={t.actions.archive}
             onClick={handleArchive}
             loading={archiving}
             variant="danger"
@@ -78,13 +89,18 @@ export function CardActions({ card, archived = false }: CardActionsProps) {
         <div className="flex gap-2">
           <ActionButton
             icon={<Barcode size={20} />}
-            label="Barcode"
+            label={t.actions.barcode}
             onClick={enterFocusMode}
             primary
           />
           <ActionButton
+            icon={<Pencil size={20} />}
+            label={t.actions.edit}
+            onClick={() => openEditCard(card)}
+          />
+          <ActionButton
             icon={<RotateCcw size={20} />}
-            label="Ripristina"
+            label={t.actions.restore}
             onClick={handleRestore}
             loading={restoring}
           />
