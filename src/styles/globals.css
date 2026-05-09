@@ -16,6 +16,7 @@
   /* legacy aliases used by a few components */
   --panel:          var(--surface);
   --nav:            var(--bg);
+  --nav-bg:         rgba(10,10,18,0.85);
   --border-subtle:  var(--border);
   --hover-item:     rgba(255,255,255,0.06);
   --text-primary:   var(--text);
@@ -38,6 +39,7 @@
 
   --panel:         var(--surface);
   --nav:           var(--bg);
+  --nav-bg:        rgba(245,245,250,0.92);
   --border-subtle: var(--border);
   --hover-item:    rgba(0,0,0,0.05);
   --text-primary:  var(--text);
@@ -74,6 +76,10 @@
 
   * { border-color: hsl(var(--border)); }
 
+  html, body {
+    overflow-x: hidden;
+  }
+
   body {
     background-color: var(--bg);
     color: var(--text);
@@ -81,6 +87,17 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
+  }
+
+  * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input, textarea, select, [contenteditable], code, pre {
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 

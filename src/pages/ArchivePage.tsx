@@ -28,7 +28,7 @@ export function ArchivePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-bg)' }}>
-        <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--accent2)", borderTopColor: "transparent" }} />
+        <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }} />
       </div>
     )
   }
@@ -39,8 +39,8 @@ export function ArchivePage() {
 
       <main className="px-4 pt-2">
         <div className="flex items-center gap-2 mb-4">
-          <Archive size={16} className="text-white/60" />
-          <h2 className="text-white/80 text-sm font-semibold">
+          <Archive size={16} style={{ color: 'var(--muted)' }} />
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
             {t.archive.title} — {t.archive.cards(cards.length)}
           </h2>
         </div>
@@ -48,7 +48,7 @@ export function ArchivePage() {
         {cards.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-5xl mb-3">📦</div>
-            <p className="text-white/50 text-sm">{t.archive.empty}</p>
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>{t.archive.empty}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -58,23 +58,32 @@ export function ArchivePage() {
                 <div key={card.id} className="space-y-2">
                   <div
                     onClick={() => handleExpand(card.id)}
-                    className="flex items-center gap-3 bg-white/5 hover:bg-white/8 rounded-2xl px-4 py-3 cursor-pointer transition-colors"
+                    className="flex items-center gap-3 rounded-2xl px-4 py-3 cursor-pointer transition-colors"
+                    style={{
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 16,
+                    }}
                   >
                     <div
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: card.color }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-white/80 font-medium text-sm truncate">{card.name}</p>
+                      <p className="font-medium text-sm truncate" style={{ color: 'var(--text)' }}>
+                        {card.name}
+                      </p>
                       {card.description && (
-                        <p className="text-white/40 text-xs truncate">{card.description}</p>
+                        <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
+                          {card.description}
+                        </p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-white/60 font-semibold text-sm">
+                      <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
                         {maskAmount(card.current_balance, card.currency)}
                       </p>
-                      <p className="text-white/30 text-xs">
+                      <p className="text-xs" style={{ color: 'var(--muted2)' }}>
                         {t.archive.archived}
                       </p>
                     </div>
@@ -90,7 +99,11 @@ export function ArchivePage() {
                           className="opacity-70"
                         />
                       </div>
-                      <CardActions card={card} archived />
+                      <CardActions
+                        card={card}
+                        archived
+                        onRestoreSuccess={() => setExpandedId(null)}
+                      />
                       <TransactionList cardId={card.id} />
                     </div>
                   )}

@@ -8,9 +8,10 @@ import { toast } from 'sonner'
 interface CardActionsProps {
   card: CardWithStats
   archived?: boolean
+  onRestoreSuccess?: () => void
 }
 
-export function CardActions({ card, archived = false }: CardActionsProps) {
+export function CardActions({ card, archived = false, onRestoreSuccess }: CardActionsProps) {
   const { enterFocusMode, openSpendSheet, openEditCard } = useCardStore()
   const { mutate: archiveCard, isPending: archiving } = useArchiveCard()
   const { mutate: restoreCard, isPending: restoring } = useRestoreCard()
@@ -25,7 +26,10 @@ export function CardActions({ card, archived = false }: CardActionsProps) {
 
   function handleRestore() {
     restoreCard(card.id, {
-      onSuccess: () => toast.success(t.actions.restoreSuccess(card.name)),
+      onSuccess: () => {
+        toast.success(t.actions.restoreSuccess(card.name))
+        onRestoreSuccess?.()
+      },
       onError: () => toast.error(t.actions.restoreError),
     })
   }

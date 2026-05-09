@@ -33,17 +33,26 @@ export function AuthPage() {
 
   if (signupDone) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-6">
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ background: 'var(--bg)' }}
+      >
         <div className="w-full max-w-sm text-center">
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 text-white">
+          <div
+            className="rounded-3xl p-8"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
             <div className="text-5xl mb-4">📧</div>
-            <h2 className="text-2xl font-bold mb-2">Controlla la tua email</h2>
-            <p className="text-white/70 mb-6">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+              Controlla la tua email
+            </h2>
+            <p className="mb-6" style={{ color: 'var(--muted)' }}>
               Ti abbiamo inviato un link di conferma. Clicca il link per attivare il tuo account.
             </p>
             <button
               onClick={() => { setSignupDone(false); setMode('login') }}
-              className="text-white/80 underline text-sm"
+              className="text-sm underline"
+              style={{ color: 'var(--accent2)' }}
             >
               Torna al login
             </button>
@@ -54,30 +63,47 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-6">
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ background: 'var(--bg)' }}
+    >
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl mb-3">
-            <CreditCard className="text-white" size={32} />
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+            style={{ background: 'var(--surface2)' }}
+          >
+            <CreditCard style={{ color: 'var(--accent)' }} size={32} />
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight">Kard</h1>
-          <p className="text-white/60 text-sm mt-1">Il tuo portafoglio condiviso</p>
+          <h1 className="text-4xl font-black tracking-tight" style={{ color: 'var(--text)' }}>
+            Kard
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+            Il tuo portafoglio condiviso
+          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 shadow-2xl">
+        <div
+          className="rounded-3xl p-6 shadow-2xl"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
           {/* Tab switch */}
-          <div className="flex bg-white/10 rounded-2xl p-1 mb-6">
+          <div
+            className="flex rounded-2xl p-1 mb-6"
+            style={{ background: 'var(--surface2)' }}
+          >
             {(['login', 'signup'] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setError(null) }}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                style={
                   mode === m
-                    ? 'bg-white text-indigo-700 shadow-sm'
-                    : 'text-white/70 hover:text-white'
-                }`}
+                    ? { background: 'var(--accent)', color: '#0a0a12' }
+                    : { color: 'var(--muted)' }
+                }
               >
                 {m === 'login' ? 'Accedi' : 'Registrati'}
               </button>
@@ -86,7 +112,12 @@ export function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-white/80 text-xs font-medium mb-1.5">Email</label>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Email
+              </label>
               <input
                 type="email"
                 autoComplete="email"
@@ -94,12 +125,17 @@ export function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="nome@esempio.it"
-                className="w-full bg-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 text-sm outline-none border border-white/20 focus:border-white/60 transition-colors"
+                className="input-dark"
               />
             </div>
 
             <div>
-              <label className="block text-white/80 text-xs font-medium mb-1.5">Password</label>
+              <label
+                className="block text-xs font-medium mb-1.5"
+                style={{ color: 'var(--muted)' }}
+              >
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -109,12 +145,14 @@ export function AuthPage() {
                   required
                   minLength={8}
                   placeholder="••••••••"
-                  className="w-full bg-white/10 text-white placeholder-white/30 rounded-xl px-4 py-3 pr-10 text-sm outline-none border border-white/20 focus:border-white/60 transition-colors"
+                  className="input-dark"
+                  style={{ paddingRight: '2.5rem' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: 'var(--muted)' }}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -122,13 +160,19 @@ export function AuthPage() {
             </div>
 
             {error && (
-              <p className="text-red-300 text-xs bg-red-500/20 rounded-xl px-3 py-2">{error}</p>
+              <p
+                className="text-xs rounded-xl px-3 py-2"
+                style={{ color: 'var(--danger)', background: 'rgba(255,95,109,0.1)' }}
+              >
+                {error}
+              </p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-white text-indigo-700 font-bold py-3 rounded-xl text-sm hover:bg-white/90 active:scale-95 transition-all disabled:opacity-60"
+              className="w-full py-3 rounded-xl text-sm active:scale-95 transition-all disabled:opacity-60"
+              style={{ background: 'var(--accent)', color: '#0a0a12', fontWeight: 700 }}
             >
               {loading ? 'Caricamento...' : mode === 'login' ? 'Accedi' : 'Crea account'}
             </button>
