@@ -11,6 +11,19 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
+      workbox: {
+        // Activate new service worker immediately without waiting for all tabs to close
+        skipWaiting: true,
+        clientsClaim: true,
+        // Never cache Supabase API calls — always go to network
+        navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
       manifest: {
         name: 'Kard — Portafoglio Condiviso',
         short_name: 'Kard',

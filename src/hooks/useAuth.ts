@@ -1,15 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
 import { queryClient } from '../lib/queryClient'
 
 export function useAuthInit() {
   const { setUser, setSession, setProfile, setLoading } = useAuthStore()
+  // Prevent concurrent loadProfile calls (INITIAL_SESSION + TOKEN_REFRESHED fire together on resume)
+  const isFetchingProfile = useRef(false)
 
   useEffect(() => {
-    // onAuthStateChange fires INITIAL_SESSION immediately, so no need for getSession()
-    // Using both caused a race condition where two loadProfile calls ran simultaneously,
-    // leaving isLoading stuck on true if the second fetch was slow
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session)
@@ -28,15 +27,29 @@ export function useAuthInit() {
   }, [setUser, setSession, setProfile, setLoading])
 
   async function loadProfile(userId: string) {
+    if (isFetchingProfile.current) return   // already in flight — skip
+    isFetchingProfile.current = true
     setLoading(true)
+
+    // Hard timeout: if the network hangs (common on mobile app-resume),
+    // abort after 8 s so the spinner doesn't spin forever.
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+
     try {
       const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
+        .abortSignal(controller.signal)
         .single()
       setProfile(data ?? null)
+    } catch {
+      // Aborted or unexpected error — leave profile as-is so existing users
+      // don't get bounced to OnboardingPage on a bad network moment.
     } finally {
+      clearTimeout(timeoutId)
+      isFetchingProfile.current = false
       setLoading(false)
     }
   }
