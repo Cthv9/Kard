@@ -1,11 +1,13 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Download, Upload, Sun, Moon, Monitor } from 'lucide-react'
+import { ChevronLeft, Download, Upload, Sun, Moon, Monitor, Fingerprint } from 'lucide-react'
 import { useSettingsStore } from '../store/useSettingsStore'
 import { usePrivacyStore } from '../store/usePrivacyStore'
 import { useAuthStore } from '../store/useAuthStore'
+import { useBiometricStore } from '../store/useBiometricStore'
 import { useTranslation } from '../hooks/useTranslation'
 import { exportBackup, importBackup } from '../lib/backup'
+import { isBiometricSupported, registerBiometric } from '../lib/biometric'
 import { toast } from 'sonner'
 import type { Theme, Language } from '../store/useSettingsStore'
 
@@ -14,10 +16,34 @@ export function SettingsPage() {
   const { theme, setTheme, language, setLanguage } = useSettingsStore()
   const { privacyMode, togglePrivacy } = usePrivacyStore()
   const profile = useAuthStore((s) => s.profile)
+  const user = useAuthStore((s) => s.user)
+  const { isEnabled: biometricEnabled, enable: enableBiometric, disable: disableBiometric } = useBiometricStore()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [exportLoading, setExportLoading] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
+  const [biometricSupported, setBiometricSupported] = useState(false)
+
+  useEffect(() => {
+    isBiometricSupported().then(setBiometricSupported)
+  }, [])
+
+  async function handleBiometricToggle() {
+    if (biometricEnabled) {
+      disableBiometric()
+      toast.success(t.settings.biometricDisabled)
+      return
+    }
+    if (!user?.id || !user?.email) return
+    try {
+      const credentialId = await registerBiometric(user.id, user.email)
+      enableBiometric(credentialId, user.email)
+      toast.success(t.settings.biometricEnabled)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg !== 'cancelled') toast.error(t.settings.biometricSetupError)
+    }
+  }
 
   async function handleExport() {
     if (!profile) return
@@ -106,6 +132,31 @@ export function SettingsPage() {
           <Row label={t.settings.privacyModeDesc}>
             <Toggle checked={privacyMode} onChange={togglePrivacy} />
           </Row>
+        </Section>
+
+        {/* Security */}
+        <Section title={t.settings.security}>
+          <Row label={t.settings.biometricTitle}>
+            <div className="flex items-center gap-2">
+              {!biometricSupported ? (
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {t.settings.biometricNotSupported}
+                </span>
+              ) : (
+                <Fingerprint size={16} style={{ color: 'var(--text-muted)' }} />
+              )}
+              <Toggle
+                checked={biometricEnabled}
+                onChange={biometricSupported ? handleBiometricToggle : () => {}}
+              />
+            </div>
+          </Row>
+          <div style={{ height: 1, backgroundColor: 'var(--border-subtle)' }} />
+          <div className="px-4 py-3">
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {t.settings.biometricDesc}
+            </p>
+          </div>
         </Section>
 
         {/* Backup */}

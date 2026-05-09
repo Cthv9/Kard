@@ -9,6 +9,8 @@ import { useSettingsStore } from './store/useSettingsStore'
 import { useAuthInit } from './hooks/useAuth'
 import { AuthPage } from './components/auth/AuthPage'
 import { OnboardingPage } from './components/auth/OnboardingPage'
+import { BiometricLockScreen } from './components/auth/BiometricLockScreen'
+import { useBiometricStore } from './store/useBiometricStore'
 import { BottomNav } from './components/layout/BottomNav'
 import { HomePage } from './pages/HomePage'
 import { StatsPage } from './pages/StatsPage'
@@ -40,6 +42,26 @@ function ThemeBootstrap() {
 function AppRoutes() {
   useAuthInit()
   const { user, profile, isLoading } = useAuthStore()
+  const { isEnabled: biometricEnabled, isLocked, setLocked } = useBiometricStore()
+
+  // Blocca automaticamente dopo 30s in background se il biometrico è attivato
+  useEffect(() => {
+    if (!biometricEnabled || !user) return
+    let hiddenAt: number | null = null
+    const LOCK_AFTER = 30_000
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        hiddenAt = Date.now()
+      } else if (hiddenAt !== null) {
+        if (Date.now() - hiddenAt >= LOCK_AFTER) setLocked(true)
+        hiddenAt = null
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [biometricEnabled, user, setLocked])
 
   if (isLoading) {
     return (
@@ -51,6 +73,8 @@ function AppRoutes() {
       </div>
     )
   }
+
+  if (biometricEnabled && isLocked && user) return <BiometricLockScreen />
 
   if (!user) return <AuthPage />
   if (!profile) return <OnboardingPage />
