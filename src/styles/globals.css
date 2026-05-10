@@ -77,7 +77,10 @@
   * { border-color: hsl(var(--border)); }
 
   html, body {
-    overflow-x: hidden;
+    /* `clip` (not `hidden`) prevents iOS Safari from turning <body> into a
+       scroll container — that conversion was the cause of the dead vertical
+       scroll on the home page after the design refactor. */
+    overflow-x: clip;
   }
 
   body {

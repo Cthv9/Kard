@@ -30,31 +30,54 @@ export function BiometricLockScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-6">
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ background: 'var(--bg)' }}
+    >
       <div className="w-full max-w-sm text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl mb-3">
-          <CreditCard className="text-white" size={32} />
+        <div
+          className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+          style={{ background: 'var(--surface2)' }}
+        >
+          <CreditCard style={{ color: 'var(--accent)' }} size={32} />
         </div>
-        <h1 className="text-4xl font-black text-white tracking-tight mb-2">Kard</h1>
-        <p className="text-white/60 text-sm mb-10">{t.biometricLock.subtitle}</p>
+        <h1
+          className="text-4xl font-black tracking-tight mb-2"
+          style={{ color: 'var(--text)' }}
+        >
+          Kard
+        </h1>
+        <p className="text-sm mb-10" style={{ color: 'var(--muted)' }}>
+          {t.biometricLock.subtitle}
+        </p>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 space-y-4">
+        <div
+          className="rounded-3xl p-6 space-y-4"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
           <button
             onClick={handleUnlock}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white text-indigo-700 font-bold py-3.5 rounded-xl text-sm hover:bg-white/90 active:scale-95 transition-all disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl text-sm active:scale-95 transition-all disabled:opacity-60"
+            style={{ background: 'var(--accent)', color: '#0a0a12', fontWeight: 700 }}
           >
             <Fingerprint size={20} />
             {loading ? t.common.loading : t.biometricLock.unlockBtn}
           </button>
 
           {error && (
-            <p className="text-red-300 text-xs bg-red-500/20 rounded-xl px-3 py-2">{error}</p>
+            <p
+              className="text-xs rounded-xl px-3 py-2"
+              style={{ color: 'var(--danger)', background: 'rgba(255,95,109,0.1)' }}
+            >
+              {error}
+            </p>
           )}
 
           <button
             onClick={handleUsePassword}
-            className="text-white/60 text-sm hover:text-white/80 transition-colors"
+            className="text-sm transition-colors"
+            style={{ color: 'var(--muted)' }}
           >
             {t.biometricLock.usePassword}
           </button>

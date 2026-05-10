@@ -118,11 +118,29 @@ export function CardScanner() {
         {status === 'scanning' && (
           <>
             <div className="relative w-72 h-44">
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-indigo-400 rounded-tl-xl" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-indigo-400 rounded-tr-xl" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-indigo-400 rounded-bl-xl" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-indigo-400 rounded-br-xl" />
-              <div className="scanner-line absolute left-3 right-3 h-0.5 bg-indigo-400 rounded-full shadow-[0_0_8px_2px_rgba(99,102,241,0.7)]" />
+              <div
+                className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] rounded-tl-xl"
+                style={{ borderColor: 'var(--accent)' }}
+              />
+              <div
+                className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] rounded-tr-xl"
+                style={{ borderColor: 'var(--accent)' }}
+              />
+              <div
+                className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] rounded-bl-xl"
+                style={{ borderColor: 'var(--accent)' }}
+              />
+              <div
+                className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] rounded-br-xl"
+                style={{ borderColor: 'var(--accent)' }}
+              />
+              <div
+                className="scanner-line absolute left-3 right-3 h-0.5 rounded-full"
+                style={{
+                  background: 'var(--accent)',
+                  boxShadow: '0 0 8px 2px rgba(200,255,87,0.7)',
+                }}
+              />
             </div>
             <p className="mt-8 text-white/80 text-sm text-center px-10 max-w-xs">
               Inquadra il codice a barre o QR della tessera fisica
