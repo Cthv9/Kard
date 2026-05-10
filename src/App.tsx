@@ -18,7 +18,9 @@ import { AuthPage } from './components/auth/AuthPage'
 import { OnboardingPage } from './components/auth/OnboardingPage'
 import { BiometricLockScreen } from './components/auth/BiometricLockScreen'
 import { useBiometricStore } from './store/useBiometricStore'
+import { useCardStore } from './store/useCardStore'
 import { BottomNav } from './components/layout/BottomNav'
+import { SearchModal } from './components/cards/SearchModal'
 import { HomePage } from './pages/HomePage'
 import { StatsPage } from './pages/StatsPage'
 import { ArchivePage } from './pages/ArchivePage'
@@ -50,6 +52,7 @@ function AppRoutes() {
   useAuthInit()
   const { user, profile, isLoading } = useAuthStore()
   const { isEnabled: biometricEnabled, isLocked, setLocked } = useBiometricStore()
+  const isSearchOpen = useCardStore((s) => s.isSearchOpen)
 
   // Blocca automaticamente dopo 30s in background se il biometrico è attivato
   useEffect(() => {
@@ -98,6 +101,7 @@ function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
       <BottomNav />
+      {isSearchOpen && <SearchModal />}
     </>
   )
 }
