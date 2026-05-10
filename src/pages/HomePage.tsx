@@ -7,7 +7,6 @@ import { CardScanner } from '../components/cards/CardScanner'
 import { FocusMode } from '../components/barcode/FocusMode'
 import { SpendSheet } from '../components/transactions/SpendSheet'
 import { TransactionList } from '../components/transactions/TransactionList'
-import { SearchModal } from '../components/cards/SearchModal'
 import { useActiveCards, useRealtimeCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { useBackButton } from '../hooks/useBackButton'
@@ -16,7 +15,7 @@ export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
   const {
     selectedCardId, selectCard,
-    isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, isSearchOpen, editingCard,
+    isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, editingCard,
   } = useCardStore()
   useRealtimeCards()
   useBackButton()
@@ -119,7 +118,6 @@ export function HomePage() {
       {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
       {(isAddCardOpen || editingCard) && <AddCardForm />}
       {isScannerOpen && <CardScanner />}
-      {isSearchOpen && <SearchModal />}
     </div>
   )
 }

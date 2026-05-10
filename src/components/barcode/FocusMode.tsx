@@ -50,7 +50,7 @@ export function FocusMode({ card }: FocusModeProps) {
 
   return createPortal(
     <>
-      {/* Overlay */}
+      {/* Overlay — z-index above bottom nav (30) */}
       <div
         onClick={exitFocusMode}
         style={{
@@ -59,7 +59,7 @@ export function FocusMode({ card }: FocusModeProps) {
           background: 'rgba(0,0,0,0.7)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
-          zIndex: 20,
+          zIndex: 40,
           opacity: visible ? 1 : 0,
           transition: 'opacity 0.3s',
         }}
@@ -79,8 +79,8 @@ export function FocusMode({ card }: FocusModeProps) {
           background: 'var(--surface)',
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
-          padding: '16px 28px calc(48px + env(safe-area-inset-bottom, 0px))',
-          zIndex: 21,
+          padding: '16px 28px calc(32px + env(safe-area-inset-bottom, 0px))',
+          zIndex: 41,
           transition: 'transform 0.4s cubic-bezier(.34,1.16,.64,1)',
           borderTop: '1px solid var(--border)',
         }}
