@@ -3,10 +3,14 @@ import { QueryClient } from '@tanstack/react-query'
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,    // 5 min — riduce refetch inutili con la cache persistita
+      // Keep stale time short so reopening the PWA after a change made on
+      // the web (or another device) refetches instead of serving stale
+      // persisted data for minutes.
+      staleTime: 1000 * 30,
       gcTime: 1000 * 60 * 60 * 24, // 24h — deve essere >= maxAge del persister
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 })

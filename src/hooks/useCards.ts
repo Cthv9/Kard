@@ -5,6 +5,18 @@ import { useAuthStore } from '../store/useAuthStore'
 import type { Card, CardInsert, CardUpdate, CardWithStats } from '../types/app'
 import { isExpired, isLowBalance } from '../lib/utils'
 
+// Supabase requests can hang indefinitely on flaky mobile connections —
+// surface a real error to the user instead of a permanent spinner.
+function withTimeout<T>(promise: PromiseLike<T>, ms = 15_000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Richiesta scaduta. Riprova.')), ms)
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v) },
+      (e) => { clearTimeout(timer); reject(e) }
+    )
+  })
+}
+
 export const CARDS_KEY = ['cards'] as const
 export const ACTIVE_CARDS_KEY = [...CARDS_KEY, 'active'] as const
 export const ARCHIVED_CARDS_KEY = [...CARDS_KEY, 'archived'] as const
@@ -71,16 +83,18 @@ export function useAddCard() {
   return useMutation({
     mutationFn: async (values: Omit<CardInsert, 'wallet_id' | 'created_by'>) => {
       if (!profile) throw new Error('Not authenticated')
-      const { data, error } = await supabase
-        .from('cards')
-        .insert({
-          ...values,
-          wallet_id: profile.wallet_id,
-          created_by: profile.id,
-          current_balance: values.initial_balance,
-        })
-        .select()
-        .single()
+      const { data, error } = await withTimeout(
+        supabase
+          .from('cards')
+          .insert({
+            ...values,
+            wallet_id: profile.wallet_id,
+            created_by: profile.id,
+            current_balance: values.initial_balance,
+          })
+          .select()
+          .single()
+      )
       if (error) throw error
       return data
     },
@@ -93,7 +107,9 @@ export function useUpdateCard() {
 
   return useMutation({
     mutationFn: async ({ id, ...update }: { id: string } & CardUpdate) => {
-      const { error } = await supabase.from('cards').update(update).eq('id', id)
+      const { error } = await withTimeout(
+        supabase.from('cards').update(update).eq('id', id)
+      )
       if (error) throw error
     },
     onSuccess: () => {
@@ -177,6 +193,17 @@ export function useRealtimeCards() {
       )
       .subscribe()
 
-    return () => { void supabase.removeChannel(channel) }
+    // Realtime can be silently dropped while the PWA is backgrounded, so on
+    // return-to-foreground we always force a refetch — this is what catches
+    // a card added on the web while the installed app was closed.
+    const onVisible = () => {
+      if (!document.hidden) qc.invalidateQueries({ queryKey: CARDS_KEY })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      void supabase.removeChannel(channel)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [qc, profile])
 }
