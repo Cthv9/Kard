@@ -86,5 +86,13 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut()
+  // Try a normal (global) sign-out first. If the network call fails or hangs,
+  // fall back to clearing the local session so the user actually gets logged
+  // out instead of being stuck on the home page.
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  } catch {
+    await supabase.auth.signOut({ scope: 'local' })
+  }
 }
