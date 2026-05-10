@@ -1,4 +1,4 @@
-import { Search, Share2, LogOut, Settings } from 'lucide-react'
+import { Share2, LogOut, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
 import { signOut } from '../../hooks/useAuth'
@@ -6,7 +6,6 @@ import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '../../hooks/useTranslation'
-import { useCardStore } from '../../store/useCardStore'
 
 interface HeaderProps {
   cardCount?: number
@@ -14,7 +13,6 @@ interface HeaderProps {
 
 export function Header({ cardCount }: HeaderProps) {
   const profile = useAuthStore((s) => s.profile)
-  const openSearch = useCardStore((s) => s.openSearch)
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
   const t = useTranslation()
@@ -78,22 +76,8 @@ export function Header({ cardCount }: HeaderProps) {
         )}
       </div>
 
-      {/* Right: search + avatar */}
+      {/* Right: avatar */}
       <div className="flex items-center gap-2.5">
-        {/* Search button */}
-        <button
-          onClick={openSearch}
-          className="w-[38px] h-[38px] rounded-full flex items-center justify-center transition-all active:scale-90"
-          style={{
-            background: 'var(--surface2)',
-            border: '1px solid var(--border)',
-            color: 'var(--muted)',
-          }}
-          title="Cerca"
-        >
-          <Search size={15} />
-        </button>
-
         {/* Avatar with dropdown */}
         <div className="relative">
           <button
@@ -102,7 +86,7 @@ export function Header({ cardCount }: HeaderProps) {
             style={{
               background: profile?.avatar_color
                 ? `linear-gradient(135deg, ${profile.avatar_color}, ${profile.avatar_color}cc)`
-                : 'linear-gradient(135deg, #7c6dfa, #a084fa)',
+                : 'linear-gradient(135deg, var(--accent2), var(--accent))',
               boxShadow: '0 0 0 2px rgba(124,109,250,0.3)',
             }}
           >

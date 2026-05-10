@@ -5,6 +5,7 @@ const it = {
     cards: 'Carte',
     stats: 'Statistiche',
     archive: 'Archivio',
+    search: 'Cerca',
   },
   header: {
     privacyShow: 'Mostra saldi',
@@ -195,6 +196,7 @@ const en: Translations = {
     cards: 'Cards',
     stats: 'Statistics',
     archive: 'Archive',
+    search: 'Search',
   },
   header: {
     privacyShow: 'Show balances',

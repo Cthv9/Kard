@@ -159,13 +159,15 @@ export function AddCardForm() {
             <button
               type="button"
               onClick={() => setHasBalance((v) => !v)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 ${
-                hasBalance ? 'bg-indigo-500' : 'bg-white/20'
-              }`}
+              className="relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0"
+              style={{ background: hasBalance ? 'var(--accent)' : 'var(--surface2)' }}
             >
               <span
-                className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
-                style={{ transform: hasBalance ? 'translateX(24px)' : 'translateX(0)' }}
+                className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow transition-transform duration-200"
+                style={{
+                  background: hasBalance ? '#0a0a12' : 'var(--text)',
+                  transform: hasBalance ? 'translateX(24px)' : 'translateX(0)',
+                }}
               />
             </button>
           </div>
@@ -208,11 +210,12 @@ export function AddCardForm() {
                   key={tp}
                   type="button"
                   onClick={() => setCodeType(tp)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
+                  style={
                     codeType === tp
-                      ? 'bg-indigo-500 text-white'
-                      : 'bg-white/10 text-white/70 hover:bg-white/15'
-                  }`}
+                      ? { background: 'var(--accent)', color: '#0a0a12' }
+                      : { background: 'var(--surface2)', color: 'var(--muted)' }
+                  }
                 >
                   {tp === 'barcode' ? '▮▯▮▯' : tp === 'qrcode' ? 'QR' : 'Testo'}
                 </button>
@@ -236,7 +239,12 @@ export function AddCardForm() {
                   type="button"
                   onClick={() => { closeAddCard(); openScanner() }}
                   title="Scansiona con fotocamera"
-                  className="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-xl px-3 border border-white/20 transition-colors"
+                  className="flex-shrink-0 rounded-xl px-3 transition-colors"
+                  style={{
+                    background: 'var(--surface2)',
+                    color: 'var(--muted)',
+                    border: '1px solid var(--border)',
+                  }}
                 >
                   <Camera size={18} />
                 </button>
@@ -289,7 +297,7 @@ export function AddCardForm() {
                   className="w-8 h-8 rounded-full transition-transform active:scale-90"
                   style={{
                     backgroundColor: c,
-                    outline: color === c ? '3px solid white' : 'none',
+                    outline: color === c ? '3px solid var(--accent)' : 'none',
                     outlineOffset: '2px',
                   }}
                 />
@@ -312,7 +320,8 @@ export function AddCardForm() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3.5 rounded-2xl text-sm transition-all active:scale-95 disabled:opacity-60"
+            className="w-full py-3.5 rounded-2xl text-sm transition-all active:scale-95 disabled:opacity-60"
+            style={{ background: 'var(--accent)', color: '#0a0a12', fontWeight: 700 }}
           >
             {isPending
               ? t.cardForm.saving

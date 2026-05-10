@@ -60,6 +60,12 @@ export function useAuthInit() {
           unlock()
           return
         }
+        // On a fresh sign-in without a cached profile, show the loading
+        // screen instead of briefly rendering the OnboardingPage with the
+        // old gradient while the profile fetches.
+        if (event === 'SIGNED_IN' && !useAuthStore.getState().profile) {
+          setLoading(true)
+        }
         await loadProfile(session.user.id)
       } else {
         setProfile(null)
