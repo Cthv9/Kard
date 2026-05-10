@@ -51,7 +51,7 @@ export function SettingsPage() {
     try {
       await exportBackup(profile)
     } catch {
-      toast.error(t.settings.importError)
+      toast.error(t.settings.exportError)
     } finally {
       setExportLoading(false)
     }

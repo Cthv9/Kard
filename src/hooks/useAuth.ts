@@ -92,13 +92,28 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signOut() {
-  // Try a normal (global) sign-out first. If the network call fails or hangs,
-  // fall back to clearing the local session so the user actually gets logged
-  // out instead of being stuck on the home page.
+  // Race the network sign-out against a short timeout. supabase-js can hang
+  // indefinitely inside a PWA when the server is unreachable, which would
+  // leave the menu closed but the user still on the home page.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), 4_000)
+  )
   try {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    await Promise.race([supabase.auth.signOut(), timeout])
   } catch {
-    await supabase.auth.signOut({ scope: 'local' })
+    // Local sign-out always wins: it just wipes the session from storage.
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
   }
+
+  // Defensively wipe persisted client state. onAuthStateChange normally
+  // handles this, but if the listener is delayed (timeout path above) the
+  // UI would otherwise stay on the home screen until the next reload.
+  try {
+    localStorage.removeItem('kard-auth')
+    localStorage.removeItem('kard-query-cache')
+  } catch {
+    // localStorage can throw in private/quota-exceeded contexts — ignore.
+  }
+  useAuthStore.setState({ user: null, session: null, profile: null, isLoading: false })
+  queryClient.clear()
 }

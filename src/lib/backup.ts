@@ -33,20 +33,24 @@ export interface KardBackup {
 export async function exportBackup(profile: Profile): Promise<void> {
   const walletId = profile.wallet_id
 
-  const [{ data: walletData }, { data: cards }, { data: transactions }] = await Promise.all([
+  const [walletRes, cardsRes] = await Promise.all([
     supabase.from('wallets').select('name').eq('id', walletId).single(),
     supabase.from('cards').select('*').eq('wallet_id', walletId).order('sort_order'),
-    supabase
-      .from('transactions')
-      .select('card_id, amount, balance_after, note, created_at')
-      .in(
-        'card_id',
-        (await supabase.from('cards').select('id').eq('wallet_id', walletId)).data?.map(
-          (c) => c.id
-        ) ?? []
-      )
-      .order('created_at'),
   ])
+  if (cardsRes.error) throw cardsRes.error
+
+  const cards = cardsRes.data ?? []
+  const cardIds = cards.map((c) => c.id)
+  const txRes = cardIds.length
+    ? await supabase
+        .from('transactions')
+        .select('card_id, amount, balance_after, note, created_at')
+        .in('card_id', cardIds)
+        .order('created_at')
+    : { data: [], error: null as null | { message: string } }
+  if (txRes.error) throw txRes.error
+  const walletData = walletRes.data
+  const transactions = txRes.data
 
   const txByCard = new Map<string, TransactionBackupEntry[]>()
   for (const tx of transactions ?? []) {
@@ -64,7 +68,7 @@ export async function exportBackup(profile: Profile): Promise<void> {
     version: 1,
     exportedAt: new Date().toISOString(),
     walletName: (walletData as { name: string } | null)?.name ?? 'Kard',
-    cards: (cards ?? []).map((c) => ({
+    cards: cards.map((c) => ({
       name: c.name,
       description: c.description,
       code: c.code,
@@ -81,12 +85,47 @@ export async function exportBackup(profile: Profile): Promise<void> {
   }
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+  const filename = `kard-backup-${new Date().toISOString().slice(0, 10)}.json`
+  await saveBlob(blob, filename)
+}
+
+async function saveBlob(blob: Blob, filename: string): Promise<void> {
+  // In standalone PWAs (especially iOS) anchor-download silently fails — try
+  // the Web Share API first when it can handle files.
+  const nav = navigator as Navigator & {
+    canShare?: (data: { files: File[] }) => boolean
+    share?: (data: { files: File[]; title?: string }) => Promise<void>
+  }
+  if (typeof nav.canShare === 'function' && typeof nav.share === 'function') {
+    try {
+      const file = new File([blob], filename, { type: blob.type })
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title: filename })
+        return
+      }
+    } catch (err) {
+      // User cancelled the share sheet — treat as success, no fallback.
+      if ((err as Error)?.name === 'AbortError') return
+      // Otherwise fall through to anchor-download.
+    }
+  }
+
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `kard-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = filename
+  a.rel = 'noopener'
+  a.style.display = 'none'
+  // The anchor MUST be in the DOM for the click to trigger a download in
+  // Safari and most mobile browsers.
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  // Defer cleanup so the browser actually starts the download before the
+  // blob URL is revoked.
+  setTimeout(() => {
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, 1500)
 }
 
 export async function importBackup(
