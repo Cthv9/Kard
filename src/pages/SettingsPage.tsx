@@ -23,6 +23,7 @@ export function SettingsPage() {
   const [exportLoading, setExportLoading] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
   const [biometricSupported, setBiometricSupported] = useState(false)
+  const [backupPassword, setBackupPassword] = useState('')
 
   useEffect(() => {
     isBiometricSupported().then(setBiometricSupported)
@@ -49,7 +50,7 @@ export function SettingsPage() {
     if (!profile) return
     setExportLoading(true)
     try {
-      await exportBackup(profile)
+      await exportBackup(profile, backupPassword || undefined)
     } catch {
       toast.error(t.settings.exportError)
     } finally {
@@ -62,7 +63,7 @@ export function SettingsPage() {
     if (!file || !profile) return
     setImportLoading(true)
     try {
-      const { imported, errors } = await importBackup(file, profile)
+      const { imported, errors } = await importBackup(file, profile, backupPassword || undefined)
       if (errors.length > 0) {
         toast.error(t.settings.importError)
       } else {
@@ -72,6 +73,10 @@ export function SettingsPage() {
       const msg = err instanceof Error ? err.message : ''
       if (msg === 'invalid_json' || msg === 'invalid_format') {
         toast.error(t.settings.invalidFile)
+      } else if (msg === 'password_required') {
+        toast.error(t.settings.importPasswordRequired)
+      } else if (msg === 'wrong_password') {
+        toast.error(t.settings.importWrongPassword)
       } else {
         toast.error(t.settings.importError)
       }
@@ -162,6 +167,23 @@ export function SettingsPage() {
         {/* Backup */}
         <Section title={t.settings.backup}>
           <div className="space-y-1">
+            {/* Password field shared between export and import */}
+            <div className="px-4 py-3">
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                {t.settings.backupPassword}
+              </label>
+              <input
+                type="password"
+                value={backupPassword}
+                onChange={(e) => setBackupPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input-dark text-sm"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {t.settings.backupPasswordDesc}
+              </p>
+            </div>
+            <div style={{ height: 1, backgroundColor: 'var(--border-subtle)' }} />
             <ActionRow
               label={t.settings.exportTitle}
               description={t.settings.exportDesc}

@@ -1,5 +1,14 @@
 import { supabase } from './supabase'
-import { encryptField, decryptField, deriveBackupKey } from './crypto'
+import {
+  encryptField,
+  decryptField,
+  importKey,
+  isEncryptedBlob,
+  deriveBackupKey,
+  uint8ToBase64,
+  base64ToUint8,
+} from './crypto'
+import { useWalletKeyStore } from '../store/useWalletKeyStore'
 import type { Profile } from '../types/app'
 
 export interface TransactionBackupEntry {
@@ -36,27 +45,35 @@ export interface KardBackupV2 {
   exportedAt: string
   walletName: string
   encrypted: true
-  // base64-encoded 16-byte salt used for PBKDF2 key derivation
+  // base64-encoded 16-byte salt for PBKDF2 key derivation
   salt: string
-  // base64-encoded 12-byte IV used for AES-GCM
+  // base64-encoded 12-byte IV for AES-GCM
   iv: string
-  // AES-GCM ciphertext of the JSON-stringified CardBackupEntry[]
+  // AES-GCM ciphertext of JSON-stringified CardBackupEntry[]
   data: string
 }
 
 export type KardBackup = KardBackupV1 | KardBackupV2
 
-function uint8ToBase64(bytes: Uint8Array): string {
-  let binary = ''
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-  return btoa(binary)
+async function getWalletKey(): Promise<CryptoKey | null> {
+  const { keyBase64 } = useWalletKeyStore.getState()
+  if (!keyBase64) return null
+  try {
+    return await importKey(keyBase64)
+  } catch {
+    return null
+  }
 }
 
-function base64ToUint8(base64: string): Uint8Array {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return bytes
+// Decrypt a nullable encrypted field; returns plaintext (or original value if
+// it is not an encrypted blob, e.g. legacy wallet without encryption).
+async function maybeDecrypt(value: string | null, key: CryptoKey | null): Promise<string | null> {
+  if (!value || !key || !isEncryptedBlob(value)) return value
+  try {
+    return await decryptField(value, key)
+  } catch {
+    return value
+  }
 }
 
 export async function exportBackup(profile: Profile, password?: string): Promise<void> {
@@ -93,23 +110,29 @@ export async function exportBackup(profile: Profile, password?: string): Promise
     txByCard.set(tx.card_id, list)
   }
 
+  // Decrypt sensitive fields before writing to backup — the DB stores them as
+  // encrypted blobs since the encryption migration ran.
+  const wek = await getWalletKey()
+
   const walletName = (walletData as { name: string } | null)?.name ?? 'Kard'
   const exportedAt = new Date().toISOString()
 
-  const cardEntries: CardBackupEntry[] = cards.map((c) => ({
-    name: c.name,
-    description: c.description,
-    code: c.code,
-    code_type: c.code_type as 'barcode' | 'qrcode' | 'text',
-    initial_balance: c.initial_balance,
-    current_balance: c.current_balance,
-    currency: c.currency,
-    color: c.color,
-    card_number: c.card_number,
-    expiry_date: c.expiry_date,
-    is_archived: c.is_archived,
-    transactions: txByCard.get(c.id) ?? [],
-  }))
+  const cardEntries: CardBackupEntry[] = await Promise.all(
+    cards.map(async (c) => ({
+      name: c.name,
+      description: c.description,
+      code: await maybeDecrypt(c.code, wek) ?? c.code,
+      code_type: c.code_type as 'barcode' | 'qrcode' | 'text',
+      initial_balance: c.initial_balance,
+      current_balance: c.current_balance,
+      currency: c.currency,
+      color: c.color,
+      card_number: await maybeDecrypt(c.card_number, wek),
+      expiry_date: await maybeDecrypt(c.expiry_date, wek),
+      is_archived: c.is_archived,
+      transactions: txByCard.get(c.id) ?? [],
+    }))
+  )
 
   let backup: KardBackup
   let filename: string
@@ -216,22 +239,27 @@ export async function importBackup(
     throw new Error('invalid_format')
   }
 
+  // Encrypt sensitive fields before inserting so the DB always gets ciphertext.
+  const wek = await getWalletKey()
+
   const errors: string[] = []
-  const toInsert = cardEntries.map((c) => ({
-    wallet_id: profile.wallet_id,
-    created_by: profile.id,
-    name: c.name,
-    description: c.description ?? null,
-    code: c.code,
-    code_type: c.code_type,
-    initial_balance: c.current_balance,
-    current_balance: c.current_balance,
-    currency: c.currency ?? 'EUR',
-    color: c.color,
-    card_number: c.card_number ?? null,
-    expiry_date: c.expiry_date ?? null,
-    is_archived: c.is_archived ?? false,
-  }))
+  const toInsert = await Promise.all(
+    cardEntries.map(async (c) => ({
+      wallet_id: profile.wallet_id,
+      created_by: profile.id,
+      name: c.name,
+      description: c.description ?? null,
+      code: wek ? await encryptField(c.code, wek) : c.code,
+      code_type: c.code_type,
+      initial_balance: c.current_balance,
+      current_balance: c.current_balance,
+      currency: c.currency ?? 'EUR',
+      color: c.color,
+      card_number: c.card_number && wek ? await encryptField(c.card_number, wek) : c.card_number ?? null,
+      expiry_date: c.expiry_date && wek ? await encryptField(c.expiry_date, wek) : c.expiry_date ?? null,
+      is_archived: c.is_archived ?? false,
+    }))
+  )
 
   const { data, error } = await supabase.from('cards').insert(toInsert).select('id')
   if (error) {
@@ -241,18 +269,3 @@ export async function importBackup(
 
   return { imported: data?.length ?? 0, errors }
 }
-
-// Re-encrypts a plaintext field value using the active wallet key.
-// Used by the one-time migration of pre-encryption records.
-export async function reencryptCardField(
-  cardId: string,
-  field: 'card_number' | 'expiry_date' | 'code',
-  plaintext: string,
-  key: CryptoKey
-): Promise<void> {
-  const encrypted = await encryptField(plaintext, key)
-  await supabase.from('cards').update({ [field]: encrypted }).eq('id', cardId)
-}
-
-// Decrypts a previously-encrypted field value (used for backup display/export).
-export { decryptField }
