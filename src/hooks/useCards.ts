@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
+import { useWalletKeyStore } from '../store/useWalletKeyStore'
+import { encryptField, decryptField, importKey, isEncryptedBlob } from '../lib/crypto'
+import { migrateExistingCards } from '../lib/migrateEncryption'
 import type { Card, CardInsert, CardUpdate, CardWithStats } from '../types/app'
 import { isExpired, isLowBalance } from '../lib/utils'
 
@@ -21,6 +24,49 @@ export const CARDS_KEY = ['cards'] as const
 export const ACTIVE_CARDS_KEY = [...CARDS_KEY, 'active'] as const
 export const ARCHIVED_CARDS_KEY = [...CARDS_KEY, 'archived'] as const
 
+// Fields encrypted at rest. null/undefined values are passed through unchanged.
+const ENCRYPTED_FIELDS = ['card_number', 'expiry_date', 'code'] as const
+type EncryptedField = typeof ENCRYPTED_FIELDS[number]
+
+async function encryptCardFields(
+  values: Partial<Record<EncryptedField, string | null>> & Record<string, unknown>,
+  key: CryptoKey
+): Promise<typeof values> {
+  const result = { ...values }
+  for (const field of ENCRYPTED_FIELDS) {
+    const v = result[field]
+    if (typeof v === 'string' && v.length > 0) {
+      result[field] = await encryptField(v, key)
+    }
+  }
+  return result
+}
+
+async function decryptCardFields(card: Card, key: CryptoKey): Promise<Card> {
+  const result = { ...card }
+  for (const field of ENCRYPTED_FIELDS) {
+    const v = result[field as keyof Card]
+    if (typeof v === 'string' && v.length > 0 && isEncryptedBlob(v)) {
+      try {
+        (result as Record<string, unknown>)[field] = await decryptField(v, key)
+      } catch {
+        // Decryption failure means wrong key or corrupted data — leave raw.
+      }
+    }
+  }
+  return result
+}
+
+async function getKey(): Promise<CryptoKey | null> {
+  const { keyBase64 } = useWalletKeyStore.getState()
+  if (!keyBase64) return null
+  try {
+    return await importKey(keyBase64)
+  } catch {
+    return null
+  }
+}
+
 function toCardWithStats(card: Card): CardWithStats {
   return {
     ...card,
@@ -34,24 +80,26 @@ function toCardWithStats(card: Card): CardWithStats {
   }
 }
 
-async function fetchActiveCards() {
+async function fetchActiveCards(key: CryptoKey | null) {
   const { data, error } = await supabase
     .from('cards')
     .select('*')
     .eq('is_archived', false)
     .order('sort_order', { ascending: true })
   if (error) throw error
-  return data
+  if (!key) return data
+  return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
 
-async function fetchArchivedCards() {
+async function fetchArchivedCards(key: CryptoKey | null) {
   const { data, error } = await supabase
     .from('cards')
     .select('*')
     .eq('is_archived', true)
     .order('archived_at', { ascending: false })
   if (error) throw error
-  return data
+  if (!key) return data
+  return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
 
 // ── ViewModels ────────────────────────────────────────────────────────────────
@@ -60,7 +108,8 @@ export function useActiveCards() {
   return useQuery({
     queryKey: ACTIVE_CARDS_KEY,
     queryFn: async () => {
-      const data = await fetchActiveCards()
+      const key = await getKey()
+      const data = await fetchActiveCards(key)
       return data.map(toCardWithStats)
     },
   })
@@ -70,7 +119,8 @@ export function useArchivedCards() {
   return useQuery({
     queryKey: ARCHIVED_CARDS_KEY,
     queryFn: async () => {
-      const data = await fetchArchivedCards()
+      const key = await getKey()
+      const data = await fetchArchivedCards(key)
       return data.map(toCardWithStats)
     },
   })
@@ -83,14 +133,21 @@ export function useAddCard() {
   return useMutation({
     mutationFn: async (values: Omit<CardInsert, 'wallet_id' | 'created_by'>) => {
       if (!profile) throw new Error('Not authenticated')
+      const key = await getKey()
+      const payload = key
+        ? await encryptCardFields(
+            { ...values, current_balance: values.initial_balance },
+            key
+          )
+        : { ...values, current_balance: values.initial_balance }
+
       const { data, error } = await withTimeout(
         supabase
           .from('cards')
           .insert({
-            ...values,
+            ...payload,
             wallet_id: profile.wallet_id,
             created_by: profile.id,
-            current_balance: values.initial_balance,
           })
           .select()
           .single()
@@ -107,8 +164,10 @@ export function useUpdateCard() {
 
   return useMutation({
     mutationFn: async ({ id, ...update }: { id: string } & CardUpdate) => {
+      const key = await getKey()
+      const payload = key ? await encryptCardFields(update as Parameters<typeof encryptCardFields>[0], key) : update
       const { error } = await withTimeout(
-        supabase.from('cards').update(update).eq('id', id)
+        supabase.from('cards').update(payload).eq('id', id)
       )
       if (error) throw error
     },
@@ -176,6 +235,11 @@ export function useRealtimeCards() {
 
   useEffect(() => {
     if (!profile) return
+
+    // One-time migration: encrypt any legacy plaintext card fields.
+    getKey().then((key) => {
+      if (key) migrateExistingCards(profile.wallet_id, key).catch(() => {})
+    })
 
     const channel = supabase
       .channel(`cards-${profile.wallet_id}`)

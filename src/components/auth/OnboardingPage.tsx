@@ -1,19 +1,34 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useWalletKeyStore } from '../../store/useWalletKeyStore'
+import { generateWalletKey, exportKey, importKey } from '../../lib/crypto'
 import { CARD_COLORS } from '../../types/app'
 
 type Step = 'choice' | 'create' | 'join'
+
+// Invite strings have the format "CODE|BASE64KEY". The CODE alone (legacy) is
+// also accepted for wallets created before encryption was introduced.
+function parseInviteString(raw: string): { code: string; keyBase64: string | null } {
+  const trimmed = raw.trim()
+  const sep = trimmed.indexOf('|')
+  if (sep === -1) return { code: trimmed.toLowerCase(), keyBase64: null }
+  return {
+    code: trimmed.slice(0, sep).toLowerCase(),
+    keyBase64: trimmed.slice(sep + 1),
+  }
+}
 
 export function OnboardingPage() {
   const [step, setStep] = useState<Step>('choice')
   const [walletName, setWalletName] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
+  const [inviteString, setInviteString] = useState('')
   const [avatarColor, setAvatarColor] = useState<string>(CARD_COLORS[0])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const { setProfile } = useAuthStore()
+  const { setKey } = useWalletKeyStore()
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -26,6 +41,12 @@ export function OnboardingPage() {
         p_avatar_color: avatarColor,
       })
       if (rpcError) throw rpcError
+
+      // Generate and persist the wallet encryption key for the new wallet.
+      const wek = await generateWalletKey()
+      const wekBase64 = await exportKey(wek)
+      setKey(wekBase64)
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -45,12 +66,25 @@ export function OnboardingPage() {
     setError(null)
     setLoading(true)
     try {
+      const { code, keyBase64 } = parseInviteString(inviteString)
+
       const { data, error: rpcError } = await supabase.rpc('join_wallet', {
-        p_invite_code: inviteCode.trim().toLowerCase(),
+        p_invite_code: code,
         p_display_name: displayName,
         p_avatar_color: avatarColor,
       })
       if (rpcError) throw rpcError
+
+      // Validate and store the encryption key if it was included in the invite.
+      if (keyBase64) {
+        try {
+          await importKey(keyBase64) // validate key is well-formed
+          setKey(keyBase64)
+        } catch {
+          // Malformed key — silently ignore; user will see encrypted blobs.
+        }
+      }
+
       setProfile(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Codice non valido')
@@ -146,13 +180,15 @@ export function OnboardingPage() {
                   </label>
                   <input
                     type="text"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
+                    value={inviteString}
+                    onChange={(e) => setInviteString(e.target.value)}
                     required
-                    placeholder="es. a1b2c3d4"
-                    maxLength={8}
-                    className="input-dark font-mono uppercase tracking-widest"
+                    placeholder="Incolla il codice invito ricevuto"
+                    className="input-dark font-mono text-sm"
                   />
+                  <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                    Incolla il codice così come ti è stato condiviso
+                  </p>
                 </div>
               )}
 
