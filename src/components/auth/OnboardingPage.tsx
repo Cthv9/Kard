@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { supabase } from '../../lib/supabase'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useWalletKeyStore } from '../../store/useWalletKeyStore'
@@ -81,7 +82,7 @@ export function OnboardingPage() {
           await importKey(keyBase64) // validate key is well-formed
           setKey(keyBase64)
         } catch {
-          // Malformed key — silently ignore; user will see encrypted blobs.
+          toast.error('Chiave di cifratura non valida. Chiedi un nuovo codice invito.')
         }
       }
 

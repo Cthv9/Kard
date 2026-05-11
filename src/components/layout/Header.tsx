@@ -42,7 +42,7 @@ export function Header({ cardCount }: HeaderProps) {
       await navigator.share({ title: t.header.shareTitle, text: t.header.shareText(inviteString) })
     } else {
       await navigator.clipboard.writeText(inviteString)
-      toast.success(t.header.codeCopied(rawCode.toUpperCase()))
+      toast.success(t.header.codeCopied())
     }
     setMenuOpen(false)
   }
