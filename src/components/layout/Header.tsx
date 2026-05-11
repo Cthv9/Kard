@@ -1,6 +1,7 @@
 import { Share2, LogOut, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useWalletKeyStore } from '../../store/useWalletKeyStore'
 import { signOut } from '../../hooks/useAuth'
 import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export function Header({ cardCount }: HeaderProps) {
   const profile = useAuthStore((s) => s.profile)
+  const keyBase64 = useWalletKeyStore((s) => s.keyBase64)
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
   const t = useTranslation()
@@ -33,12 +35,14 @@ export function Header({ cardCount }: HeaderProps) {
       .eq('id', walletId)
       .single()
     if (!data) return
-    const inviteCode = (data as { invite_code: string }).invite_code.toUpperCase()
+    const rawCode = (data as { invite_code: string }).invite_code
+    // Combine invite code and encryption key so the recipient can join and decrypt.
+    const inviteString = keyBase64 ? `${rawCode}|${keyBase64}` : rawCode
     if (navigator.share) {
-      await navigator.share({ title: t.header.shareTitle, text: t.header.shareText(inviteCode) })
+      await navigator.share({ title: t.header.shareTitle, text: t.header.shareText(inviteString) })
     } else {
-      await navigator.clipboard.writeText(inviteCode)
-      toast.success(t.header.codeCopied(inviteCode))
+      await navigator.clipboard.writeText(inviteString)
+      toast.success(t.header.codeCopied(rawCode.toUpperCase()))
     }
     setMenuOpen(false)
   }

@@ -15,8 +15,8 @@ const it = {
     signOut: 'Esci',
     codeCopied: (code: string) => `Codice copiato: ${code}`,
     shareTitle: 'Unisciti al portafoglio Kard',
-    shareText: (code: string) =>
-      `Usa il codice ${code} per unirti al nostro portafoglio condiviso su Kard.`,
+    shareText: (inviteString: string) =>
+      `Incolla questo codice su Kard per unirti al nostro portafoglio condiviso:\n${inviteString}`,
   },
   settings: {
     title: 'Impostazioni',
@@ -207,8 +207,8 @@ const en: Translations = {
     signOut: 'Sign out',
     codeCopied: (code: string) => `Code copied: ${code}`,
     shareTitle: 'Join the Kard wallet',
-    shareText: (code: string) =>
-      `Use code ${code} to join our shared wallet on Kard.`,
+    shareText: (inviteString: string) =>
+      `Paste this code in Kard to join our shared wallet:\n${inviteString}`,
   },
   settings: {
     title: 'Settings',

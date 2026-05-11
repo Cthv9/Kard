@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { encryptField, decryptField, deriveBackupKey } from './crypto'
 import type { Profile } from '../types/app'
 
 export interface TransactionBackupEntry {
@@ -23,14 +24,42 @@ export interface CardBackupEntry {
   transactions: TransactionBackupEntry[]
 }
 
-export interface KardBackup {
+export interface KardBackupV1 {
   version: 1
   exportedAt: string
   walletName: string
   cards: CardBackupEntry[]
 }
 
-export async function exportBackup(profile: Profile): Promise<void> {
+export interface KardBackupV2 {
+  version: 2
+  exportedAt: string
+  walletName: string
+  encrypted: true
+  // base64-encoded 16-byte salt used for PBKDF2 key derivation
+  salt: string
+  // base64-encoded 12-byte IV used for AES-GCM
+  iv: string
+  // AES-GCM ciphertext of the JSON-stringified CardBackupEntry[]
+  data: string
+}
+
+export type KardBackup = KardBackupV1 | KardBackupV2
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
+}
+
+function base64ToUint8(base64: string): Uint8Array {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+export async function exportBackup(profile: Profile, password?: string): Promise<void> {
   const walletId = profile.wallet_id
 
   const [walletRes, cardsRes] = await Promise.all([
@@ -64,28 +93,50 @@ export async function exportBackup(profile: Profile): Promise<void> {
     txByCard.set(tx.card_id, list)
   }
 
-  const backup: KardBackup = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    walletName: (walletData as { name: string } | null)?.name ?? 'Kard',
-    cards: cards.map((c) => ({
-      name: c.name,
-      description: c.description,
-      code: c.code,
-      code_type: c.code_type as 'barcode' | 'qrcode' | 'text',
-      initial_balance: c.initial_balance,
-      current_balance: c.current_balance,
-      currency: c.currency,
-      color: c.color,
-      card_number: c.card_number,
-      expiry_date: c.expiry_date,
-      is_archived: c.is_archived,
-      transactions: txByCard.get(c.id) ?? [],
-    })),
+  const walletName = (walletData as { name: string } | null)?.name ?? 'Kard'
+  const exportedAt = new Date().toISOString()
+
+  const cardEntries: CardBackupEntry[] = cards.map((c) => ({
+    name: c.name,
+    description: c.description,
+    code: c.code,
+    code_type: c.code_type as 'barcode' | 'qrcode' | 'text',
+    initial_balance: c.initial_balance,
+    current_balance: c.current_balance,
+    currency: c.currency,
+    color: c.color,
+    card_number: c.card_number,
+    expiry_date: c.expiry_date,
+    is_archived: c.is_archived,
+    transactions: txByCard.get(c.id) ?? [],
+  }))
+
+  let backup: KardBackup
+  let filename: string
+
+  if (password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const key = await deriveBackupKey(password, salt)
+    const plaintext = new TextEncoder().encode(JSON.stringify(cardEntries))
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)
+
+    backup = {
+      version: 2,
+      exportedAt,
+      walletName,
+      encrypted: true,
+      salt: uint8ToBase64(salt),
+      iv: uint8ToBase64(iv),
+      data: uint8ToBase64(new Uint8Array(ciphertext)),
+    }
+    filename = `kard-backup-enc-${exportedAt.slice(0, 10)}.json`
+  } else {
+    backup = { version: 1, exportedAt, walletName, cards: cardEntries }
+    filename = `kard-backup-${exportedAt.slice(0, 10)}.json`
   }
 
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
-  const filename = `kard-backup-${new Date().toISOString().slice(0, 10)}.json`
   await saveBlob(blob, filename)
 }
 
@@ -130,7 +181,8 @@ async function saveBlob(blob: Blob, filename: string): Promise<void> {
 
 export async function importBackup(
   file: File,
-  profile: Profile
+  profile: Profile,
+  password?: string
 ): Promise<{ imported: number; errors: string[] }> {
   const text = await file.text()
   let backup: KardBackup
@@ -141,12 +193,31 @@ export async function importBackup(
     throw new Error('invalid_json')
   }
 
-  if (backup.version !== 1 || !Array.isArray(backup.cards)) {
+  let cardEntries: CardBackupEntry[]
+
+  if (backup.version === 2) {
+    if (!password) throw new Error('password_required')
+    const b2 = backup as KardBackupV2
+    const salt = base64ToUint8(b2.salt)
+    const iv = base64ToUint8(b2.iv)
+    const ciphertext = base64ToUint8(b2.data)
+    const key = await deriveBackupKey(password, salt)
+    let plaintext: ArrayBuffer
+    try {
+      plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
+    } catch {
+      throw new Error('wrong_password')
+    }
+    cardEntries = JSON.parse(new TextDecoder().decode(plaintext)) as CardBackupEntry[]
+  } else if (backup.version === 1) {
+    if (!Array.isArray(backup.cards)) throw new Error('invalid_format')
+    cardEntries = backup.cards
+  } else {
     throw new Error('invalid_format')
   }
 
   const errors: string[] = []
-  const toInsert = backup.cards.map((c) => ({
+  const toInsert = cardEntries.map((c) => ({
     wallet_id: profile.wallet_id,
     created_by: profile.id,
     name: c.name,
@@ -170,3 +241,18 @@ export async function importBackup(
 
   return { imported: data?.length ?? 0, errors }
 }
+
+// Re-encrypts a plaintext field value using the active wallet key.
+// Used by the one-time migration of pre-encryption records.
+export async function reencryptCardField(
+  cardId: string,
+  field: 'card_number' | 'expiry_date' | 'code',
+  plaintext: string,
+  key: CryptoKey
+): Promise<void> {
+  const encrypted = await encryptField(plaintext, key)
+  await supabase.from('cards').update({ [field]: encrypted }).eq('id', cardId)
+}
+
+// Decrypts a previously-encrypted field value (used for backup display/export).
+export { decryptField }
