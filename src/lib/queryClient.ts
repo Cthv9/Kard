@@ -9,7 +9,11 @@ export const queryClient = new QueryClient({
       staleTime: 1000 * 30,
       gcTime: 1000 * 60 * 60 * 24, // 24h — deve essere >= maxAge del persister
       retry: 1,
-      refetchOnWindowFocus: true,
+      // useRealtimeCards already invalidates queries on visibilitychange, so
+      // refetchOnWindowFocus would just fire a duplicate request on every
+      // tab focus. Reconnect refetch stays on because realtime can be silently
+      // dropped while the socket is down.
+      refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },
   },

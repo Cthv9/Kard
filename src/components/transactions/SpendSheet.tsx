@@ -13,6 +13,16 @@ interface SpendSheetProps {
 
 const QUICK_AMOUNTS = [5, 10, 20, 50]
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+}
+
+function symbolFor(currency: string): string {
+  return CURRENCY_SYMBOLS[currency] ?? currency
+}
+
 export function SpendSheet({ card }: SpendSheetProps) {
   const { isSpendSheetOpen, closeSpendSheet } = useCardStore()
   const { mutate: deduct, isPending } = useDeductCredit()
@@ -23,6 +33,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
   const numAmount = parseFloat(amount)
   const isValid = !isNaN(numAmount) && numAmount > 0 && numAmount <= card.current_balance
   const newBalance = isValid ? card.current_balance - numAmount : card.current_balance
+  const currencySymbol = symbolFor(card.currency)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,7 +43,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
       { cardId: card.id, amount: numAmount, note: note || undefined },
       {
         onSuccess: () => {
-          toast.success(t.spend.success(formatCurrency(numAmount), card.name))
+          toast.success(t.spend.success(formatCurrency(numAmount, card.currency), card.name))
           setAmount('')
           setNote('')
           closeSpendSheet()
@@ -94,7 +105,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
                 className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-lg"
                 style={{ color: 'var(--muted)' }}
               >
-                €
+                {currencySymbol}
               </span>
               <input
                 type="number"
@@ -127,7 +138,7 @@ export function SpendSheet({ card }: SpendSheetProps) {
                     : { background: 'var(--surface2)', color: 'var(--muted)' }
                 }
               >
-                €{a}
+                {currencySymbol}{a}
               </button>
             ))}
           </div>

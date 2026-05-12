@@ -49,7 +49,9 @@ export function AddCardForm() {
     e.preventDefault()
 
     const balance = hasBalance ? parseFloat(initialBalance) : 0
-    if (hasBalance && (isNaN(balance) || balance < 0)) {
+    // Reject NaN, Infinity, negatives, and absurd values that almost certainly
+    // mean the user typed scientific notation (e.g. "1e10") into a number field.
+    if (hasBalance && (!Number.isFinite(balance) || balance < 0 || balance > 1_000_000)) {
       toast.error(t.cardForm.invalidBalance)
       return
     }
@@ -183,6 +185,7 @@ export function AddCardForm() {
                   onChange={(e) => setInitialBalance(e.target.value)}
                   required={hasBalance}
                   min="0"
+                  max="1000000"
                   step="0.01"
                   placeholder="50.00"
                   className="input-dark"
