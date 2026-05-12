@@ -56,7 +56,6 @@ export default defineConfig({
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'react-vendor'
           if (id.includes('@tanstack/react-query')) return 'query-vendor'
           if (id.includes('@supabase')) return 'supabase-vendor'
-          if (id.includes('recharts')) return 'chart-vendor'
         },
       },
     },

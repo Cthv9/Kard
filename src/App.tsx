@@ -36,6 +36,7 @@ import { BiometricLockScreen } from './components/auth/BiometricLockScreen'
 import { useBiometricStore } from './store/useBiometricStore'
 import { useCardStore } from './store/useCardStore'
 import { BottomNav } from './components/layout/BottomNav'
+import { ErrorBoundary } from './components/layout/ErrorBoundary'
 import { SearchModal } from './components/cards/SearchModal'
 import { HomePage } from './pages/HomePage'
 import { StatsPage } from './pages/StatsPage'
@@ -150,25 +151,27 @@ export default function App() {
   if (!isConfigured) return <NotConfigured />
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={persistOptions}
-    >
-      <HashRouter>
-        <ThemeBootstrap />
-        <AppRoutes />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: 'var(--panel)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              borderRadius: '16px',
-            },
-          }}
-        />
-      </HashRouter>
-    </PersistQueryClientProvider>
+    <ErrorBoundary>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={persistOptions}
+      >
+        <HashRouter>
+          <ThemeBootstrap />
+          <AppRoutes />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: 'var(--panel)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-primary)',
+                borderRadius: '16px',
+              },
+            }}
+          />
+        </HashRouter>
+      </PersistQueryClientProvider>
+    </ErrorBoundary>
   )
 }

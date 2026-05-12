@@ -1,34 +1,76 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Plus, ScanLine } from 'lucide-react'
 import { CardTile } from './CardTile'
 import { useCardStore } from '../../store/useCardStore'
 import type { CardWithStats } from '../../types/app'
 
+const GAP = 14
+const H_PADDING = 24
+
+interface CardDeckSlotProps {
+  card: CardWithStats
+  index: number
+  isSelected: boolean
+  onSelect: (id: string, index: number) => void
+}
+
+// Stable per-tile slot. The inner useCallback captures id+index so the onClick
+// reference is stable across re-renders of the parent — required for the
+// React.memo on CardTile to actually skip work when only sibling tiles change.
+const CardDeckSlot = memo(function CardDeckSlot({ card, index, isSelected, onSelect }: CardDeckSlotProps) {
+  const handleClick = useCallback(() => onSelect(card.id, index), [card.id, index, onSelect])
+  return (
+    <div
+      style={{
+        flex: `0 0 calc(100% - ${H_PADDING * 2}px)`,
+        minWidth: `calc(100% - ${H_PADDING * 2}px)`,
+        scrollSnapAlign: 'start',
+      }}
+    >
+      <CardTile card={card} isSelected={isSelected} onClick={handleClick} />
+    </div>
+  )
+})
+
 interface CardDeckProps {
   cards: CardWithStats[]
 }
-
-const GAP = 14
-const H_PADDING = 24
 
 export function CardDeck({ cards }: CardDeckProps) {
   const { selectedCardId, selectCard, openAddCard, openScanner } = useCardStore()
   const carouselRef = useRef<HTMLDivElement>(null)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isScrollingByCode = useRef(false)
+  const programmaticScrollCount = useRef(0)
+  // Measured once and re-measured only on viewport resize, instead of reading
+  // offsetWidth on every scroll event (which forces a layout reflow).
+  const [cardWidth, setCardWidth] = useState(0)
 
   const selectedIndex = cards.findIndex((c) => c.id === selectedCardId)
   const effectiveIndex = selectedIndex === -1 ? 0 : selectedIndex
 
-  /* Scroll carousel to a given index */
-  const scrollTo = useCallback((idx: number, smooth = true) => {
+  useEffect(() => {
     const el = carouselRef.current
     if (!el) return
-    const cardWidth = el.offsetWidth - H_PADDING * 2
-    isScrollingByCode.current = true
-    el.scrollTo({ left: idx * (cardWidth + GAP), behavior: smooth ? 'smooth' : 'instant' })
-    setTimeout(() => { isScrollingByCode.current = false }, 500)
+    setCardWidth(el.offsetWidth - H_PADDING * 2)
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width
+      if (w) setCardWidth(w - H_PADDING * 2)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
+
+  /* Scroll carousel to a given index. Counter-based guard handles rapid
+     successive scrollTo calls — boolean+setTimeout race-conditioned. */
+  const scrollTo = useCallback((idx: number, smooth = true) => {
+    const el = carouselRef.current
+    if (!el || cardWidth === 0) return
+    programmaticScrollCount.current += 1
+    el.scrollTo({ left: idx * (cardWidth + GAP), behavior: smooth ? 'smooth' : 'instant' })
+    setTimeout(() => {
+      programmaticScrollCount.current = Math.max(0, programmaticScrollCount.current - 1)
+    }, 500)
+  }, [cardWidth])
 
   /* When selected card changes externally (e.g. dot click → selectCard), sync scroll */
   useEffect(() => {
@@ -36,20 +78,27 @@ export function CardDeck({ cards }: CardDeckProps) {
   }, [effectiveIndex, scrollTo])
 
   /* Detect active card from scroll position */
-  function handleScroll() {
-    if (isScrollingByCode.current) return
+  const handleScroll = useCallback(() => {
+    if (programmaticScrollCount.current > 0) return
+    if (cardWidth === 0) return
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
     scrollTimerRef.current = setTimeout(() => {
       const el = carouselRef.current
       if (!el) return
-      const cardWidth = el.offsetWidth - H_PADDING * 2
       const idx = Math.round(el.scrollLeft / (cardWidth + GAP))
       const clamped = Math.max(0, Math.min(cards.length - 1, idx))
       if (cards[clamped] && cards[clamped].id !== selectedCardId) {
         selectCard(cards[clamped].id)
       }
     }, 60)
-  }
+  }, [cardWidth, cards, selectedCardId, selectCard])
+
+  // Stable per-card click handler so React.memo(CardTile) is not invalidated
+  // every render by a new arrow function.
+  const handleTileClick = useCallback((id: string, index: number) => {
+    selectCard(id)
+    scrollTo(index)
+  }, [selectCard, scrollTo])
 
   if (cards.length === 0) {
     return (
@@ -95,23 +144,13 @@ export function CardDeck({ cards }: CardDeckProps) {
         className="[&::-webkit-scrollbar]:hidden"
       >
         {cards.map((card, index) => (
-          <div
+          <CardDeckSlot
             key={card.id}
-            style={{
-              flex: `0 0 calc(100% - ${H_PADDING * 2}px)`,
-              minWidth: `calc(100% - ${H_PADDING * 2}px)`,
-              scrollSnapAlign: 'start',
-            }}
-          >
-            <CardTile
-              card={card}
-              isSelected={index === effectiveIndex}
-              onClick={() => {
-                selectCard(card.id)
-                scrollTo(index)
-              }}
-            />
-          </div>
+            card={card}
+            index={index}
+            isSelected={index === effectiveIndex}
+            onSelect={handleTileClick}
+          />
         ))}
       </div>
 

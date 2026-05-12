@@ -50,3 +50,16 @@ export function isLightColor(hex: string): boolean {
   const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255
   return luminance > 0.5
 }
+
+const FALLBACK_HEX = '#6366f1'
+
+// Return a darker shade of a 6-digit hex color. Falls back to the indigo
+// brand color when the input is malformed (e.g. legacy 'rgb(…)' values that
+// survived an unencrypted-to-encrypted migration).
+export function darken(hex: string, amount = 0.35): string {
+  const rgb = hexToRgb(hex) ?? hexToRgb(FALLBACK_HEX)!
+  const r = Math.max(0, Math.round(rgb.r * (1 - amount)))
+  const g = Math.max(0, Math.round(rgb.g * (1 - amount)))
+  const b = Math.max(0, Math.round(rgb.b * (1 - amount)))
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}

@@ -1,5 +1,6 @@
+import { memo, useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { cn } from '../../lib/utils'
+import { cn, darken } from '../../lib/utils'
 import type { CardWithStats } from '../../types/app'
 
 interface CardTileProps {
@@ -8,15 +9,6 @@ interface CardTileProps {
   onClick: () => void
   style?: React.CSSProperties
   className?: string
-}
-
-/* Derive a darker shade of the card color for gradient end */
-function darken(hex: string, amount = 0.35): string {
-  const n = parseInt(hex.replace('#', ''), 16)
-  const r = Math.max(0, Math.round(((n >> 16) & 0xff) * (1 - amount)))
-  const g = Math.max(0, Math.round(((n >> 8) & 0xff) * (1 - amount)))
-  const b = Math.max(0, Math.round((n & 0xff) * (1 - amount)))
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
 /* Mask the card number: show only last 4 digits */
@@ -28,9 +20,13 @@ function maskCode(code: string): string {
 
 const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`
 
-export function CardTile({ card, isSelected, onClick, style, className }: CardTileProps) {
-  const mid = darken(card.color, 0.2)
-  const end = darken(card.color, 0.42)
+function CardTileImpl({ card, isSelected, onClick, style, className }: CardTileProps) {
+  // Memoize gradient stops on color so re-renders driven by sibling cards
+  // (carousel scroll, selection change) don't recompute the darken math.
+  const { mid, end } = useMemo(
+    () => ({ mid: darken(card.color, 0.2), end: darken(card.color, 0.42) }),
+    [card.color]
+  )
 
   return (
     <div
@@ -181,3 +177,9 @@ export function CardTile({ card, isSelected, onClick, style, className }: CardTi
     </div>
   )
 }
+
+// Wrap in memo so the deck does not re-render every tile on each scroll tick
+// or selection change. The shallow prop check is exact: card is a reference
+// from the query cache and onClick comes from a memoized useCallback in
+// CardDeck (see P2.5).
+export const CardTile = memo(CardTileImpl)
