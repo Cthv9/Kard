@@ -251,7 +251,7 @@ export async function importBackup(
       description: c.description ?? null,
       code: wek ? await encryptField(c.code, wek) : c.code,
       code_type: c.code_type,
-      initial_balance: c.current_balance,
+      initial_balance: c.initial_balance,
       current_balance: c.current_balance,
       currency: c.currency ?? 'EUR',
       color: c.color,

@@ -3,19 +3,26 @@ import { Header } from '../components/layout/Header'
 import { FocusMode } from '../components/barcode/FocusMode'
 import { CardActions } from '../components/cards/CardActions'
 import { TransactionList } from '../components/transactions/TransactionList'
+import { AddCardForm } from '../components/cards/AddCardForm'
+import { SpendSheet } from '../components/transactions/SpendSheet'
 import { useArchivedCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { CardTile } from '../components/cards/CardTile'
 import { usePrivacyStore } from '../store/usePrivacyStore'
 import { useTranslation } from '../hooks/useTranslation'
+import { useBackButton } from '../hooks/useBackButton'
 import { Archive } from 'lucide-react'
 
 export function ArchivePage() {
   const { data: cards = [], isLoading } = useArchivedCards()
-  const { selectCard, selectedCardId, isFocusMode } = useCardStore()
+  const {
+    selectCard, selectedCardId,
+    isFocusMode, isSpendSheetOpen, isAddCardOpen, editingCard,
+  } = useCardStore()
   const { maskAmount } = usePrivacyStore()
   const t = useTranslation()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  useBackButton()
 
   const selectedCard = cards.find((c) => c.id === selectedCardId)
 
@@ -115,6 +122,8 @@ export function ArchivePage() {
       </main>
 
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}
+      {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
+      {(isAddCardOpen || editingCard) && <AddCardForm />}
     </div>
   )
 }
