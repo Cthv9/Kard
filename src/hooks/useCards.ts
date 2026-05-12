@@ -24,23 +24,7 @@ export const CARDS_KEY = ['cards'] as const
 export const ACTIVE_CARDS_KEY = [...CARDS_KEY, 'active'] as const
 export const ARCHIVED_CARDS_KEY = [...CARDS_KEY, 'archived'] as const
 
-// Fields encrypted at rest. null/undefined values are passed through unchanged.
 const ENCRYPTED_FIELDS = ['card_number', 'expiry_date', 'code'] as const
-type EncryptedField = typeof ENCRYPTED_FIELDS[number]
-
-async function encryptCardFields(
-  values: Partial<Record<EncryptedField, string | null>> & Record<string, unknown>,
-  key: CryptoKey
-): Promise<typeof values> {
-  const result = { ...values }
-  for (const field of ENCRYPTED_FIELDS) {
-    const v = result[field]
-    if (typeof v === 'string' && v.length > 0) {
-      result[field] = await encryptField(v, key)
-    }
-  }
-  return result
-}
 
 async function decryptCardFields(card: Card, key: CryptoKey): Promise<Card> {
   const result = { ...card }
@@ -65,6 +49,12 @@ async function getKey(): Promise<CryptoKey | null> {
   } catch {
     return null
   }
+}
+
+// Encrypt a single nullable string field when a key is available.
+async function enc(value: string | null | undefined, key: CryptoKey | null): Promise<string | null | undefined> {
+  if (key && typeof value === 'string' && value.length > 0) return encryptField(value, key)
+  return value
 }
 
 function toCardWithStats(card: Card): CardWithStats {
@@ -134,20 +124,18 @@ export function useAddCard() {
     mutationFn: async (values: Omit<CardInsert, 'wallet_id' | 'created_by'>) => {
       if (!profile) throw new Error('Not authenticated')
       const key = await getKey()
-      const payload = key
-        ? await encryptCardFields(
-            { ...values, current_balance: values.initial_balance },
-            key
-          )
-        : { ...values, current_balance: values.initial_balance }
 
       const { data, error } = await withTimeout(
         supabase
           .from('cards')
           .insert({
-            ...payload,
+            ...values,
+            code: (await enc(values.code, key)) ?? values.code,
+            card_number: (await enc(values.card_number, key)) ?? null,
+            expiry_date: (await enc(values.expiry_date, key)) ?? null,
             wallet_id: profile.wallet_id,
             created_by: profile.id,
+            current_balance: values.initial_balance,
           })
           .select()
           .single()
@@ -165,7 +153,12 @@ export function useUpdateCard() {
   return useMutation({
     mutationFn: async ({ id, ...update }: { id: string } & CardUpdate) => {
       const key = await getKey()
-      const payload = key ? await encryptCardFields(update as Parameters<typeof encryptCardFields>[0], key) : update
+      const payload: CardUpdate = { ...update }
+      if (key) {
+        if (typeof payload.code === 'string') payload.code = await encryptField(payload.code, key)
+        if (typeof payload.card_number === 'string') payload.card_number = await encryptField(payload.card_number, key)
+        if (typeof payload.expiry_date === 'string') payload.expiry_date = await encryptField(payload.expiry_date, key)
+      }
       const { error } = await withTimeout(
         supabase.from('cards').update(payload).eq('id', id)
       )

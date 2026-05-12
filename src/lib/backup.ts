@@ -138,8 +138,8 @@ export async function exportBackup(profile: Profile, password?: string): Promise
   let filename: string
 
   if (password) {
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const salt = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(16)))
+    const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(12)))
     const key = await deriveBackupKey(password, salt)
     const plaintext = new TextEncoder().encode(JSON.stringify(cardEntries))
     const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)
@@ -151,7 +151,7 @@ export async function exportBackup(profile: Profile, password?: string): Promise
       encrypted: true,
       salt: uint8ToBase64(salt),
       iv: uint8ToBase64(iv),
-      data: uint8ToBase64(new Uint8Array(ciphertext)),
+      data: uint8ToBase64(new Uint8Array(ciphertext as ArrayBuffer)),
     }
     filename = `kard-backup-enc-${exportedAt.slice(0, 10)}.json`
   } else {
