@@ -12,6 +12,10 @@ export interface CardWithStats extends Card {
   usedPercent: number
   isExpired: boolean
   isLow: boolean
+  // True when one or more encrypted fields could not be decoded with the
+  // current wallet key (wrong key, corrupted blob). The UI should warn the
+  // user instead of rendering ciphertext as a barcode value.
+  decryptionFailed: boolean
 }
 
 export interface TransactionWithUser extends Transaction {

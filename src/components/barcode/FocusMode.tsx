@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AlertTriangle } from 'lucide-react'
 import { useCardStore } from '../../store/useCardStore'
 import { BarcodeDisplay, QRDisplay } from './BarcodeDisplay'
 import type { CardWithStats } from '../../types/app'
@@ -121,47 +122,83 @@ export function FocusMode({ card }: FocusModeProps) {
           Scansiona il barcode
         </div>
 
-        {/* Barcode area — white background */}
-        <div
-          style={{
-            background: 'white',
-            borderRadius: 16,
-            padding: '24px 20px',
-            marginBottom: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 16,
-          }}
-        >
-          {codeView === 'barcode' && (
-            <BarcodeDisplay value={card.code} height={80} width={2} displayValue={false} className="w-full" />
-          )}
-          {codeView === 'qrcode' && (
-            <QRDisplay value={card.code} size={180} className="flex justify-center" />
-          )}
-          {codeView === 'text' && (
-            <p className="font-mono text-2xl font-bold tracking-widest break-all text-gray-900 text-center">
-              {card.code}
-            </p>
-          )}
-
-          {/* Numeric code */}
+        {/* Barcode area — white background. When the wallet key did not decrypt
+            this card we never feed ciphertext to JsBarcode; instead we surface
+            a clear warning so the user knows the device is missing the key. */}
+        {card.decryptionFailed ? (
           <div
             style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize: 16,
-              letterSpacing: 4,
-              color: '#111',
-              fontWeight: 500,
+              background: 'rgba(251, 191, 36, 0.08)',
+              border: '1px solid rgba(251, 191, 36, 0.35)',
+              borderRadius: 16,
+              padding: '20px 18px',
+              marginBottom: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 10,
             }}
           >
-            {card.code}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: '#fbbf24',
+                fontWeight: 700,
+                fontSize: 14,
+              }}
+            >
+              <AlertTriangle size={18} />
+              Carta non decifrabile
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.45 }}>
+              Questo dispositivo non ha la chiave del wallet che ha creato la carta.
+              Chiedi un nuovo invito a un membro che la vede correttamente.
+            </p>
           </div>
-        </div>
+        ) : (
+          <div
+            style={{
+              background: 'white',
+              borderRadius: 16,
+              padding: '24px 20px',
+              marginBottom: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
+            {codeView === 'barcode' && (
+              <BarcodeDisplay value={card.code} height={80} width={2} displayValue={false} className="w-full" />
+            )}
+            {codeView === 'qrcode' && (
+              <QRDisplay value={card.code} size={180} className="flex justify-center" />
+            )}
+            {codeView === 'text' && (
+              <p className="font-mono text-2xl font-bold tracking-widest break-all text-gray-900 text-center">
+                {card.code}
+              </p>
+            )}
 
-        {/* Toggle barcode / QR (only when code_type is not text) */}
-        {card.code_type !== 'text' && (
+            {/* Numeric code */}
+            <div
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 16,
+                letterSpacing: 4,
+                color: '#111',
+                fontWeight: 500,
+              }}
+            >
+              {card.code}
+            </div>
+          </div>
+        )}
+
+        {/* Toggle barcode / QR (only when code_type is not text and we have a usable code) */}
+        {card.code_type !== 'text' && !card.decryptionFailed && (
           <div
             style={{
               display: 'flex',

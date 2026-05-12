@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import type { CardWithStats } from '../../types/app'
 
@@ -87,6 +88,27 @@ export function CardTile({ card, isSelected, onClick, style, className }: CardTi
             boxShadow: 'inset 0 0 0 2.5px rgba(255,255,255,0.5)',
           }}
         />
+      )}
+
+      {/* Decryption-failure badge: warns that the wallet key did not unlock this card */}
+      {card.decryptionFailed && (
+        <div
+          className="absolute flex items-center gap-1 px-2 py-1 rounded-full"
+          style={{
+            top: 12,
+            right: 12,
+            background: 'rgba(0,0,0,0.55)',
+            color: '#fbbf24',
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: 0.4,
+            backdropFilter: 'blur(4px)',
+          }}
+          title="Impossibile decifrare questa carta con la chiave attuale"
+        >
+          <AlertTriangle size={12} strokeWidth={2.5} />
+          KEY
+        </div>
       )}
 
       {/* Content */}
