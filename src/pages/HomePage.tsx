@@ -1,15 +1,22 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Header } from '../components/layout/Header'
 import { CardDeck } from '../components/cards/CardDeck'
 import { CardActions } from '../components/cards/CardActions'
 import { AddCardForm } from '../components/cards/AddCardForm'
-import { CardScanner } from '../components/cards/CardScanner'
 import { FocusMode } from '../components/barcode/FocusMode'
 import { SpendSheet } from '../components/transactions/SpendSheet'
 import { TransactionList } from '../components/transactions/TransactionList'
 import { useActiveCards, useRealtimeCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { useBackButton } from '../hooks/useBackButton'
+
+// CardScanner pulls in @zxing/browser + @zxing/library (~1 MB minified) for
+// camera decoding. Loading it eagerly inflates the first-paint bundle even
+// though the scanner is only opened from a button tap. Lazy-loading defers
+// the network/parse cost until the user actually clicks "Scansiona".
+const CardScanner = lazy(() =>
+  import('../components/cards/CardScanner').then((m) => ({ default: m.CardScanner }))
+)
 
 export function HomePage() {
   const { data: cards = [], isLoading } = useActiveCards()
@@ -117,7 +124,25 @@ export function HomePage() {
       {selectedCard && isFocusMode && <FocusMode card={selectedCard} />}
       {selectedCard && isSpendSheetOpen && <SpendSheet card={selectedCard} />}
       {(isAddCardOpen || editingCard) && <AddCardForm />}
-      {isScannerOpen && <CardScanner />}
+      {isScannerOpen && (
+        <Suspense fallback={<ScannerFallback />}>
+          <CardScanner />
+        </Suspense>
+      )}
+    </div>
+  )
+}
+
+// Lightweight black overlay shown for the few hundred ms it takes to fetch
+// the scanner chunk on first use. Matches the scanner's full-screen layout
+// so the transition is not jarring.
+function ScannerFallback() {
+  return (
+    <div className="fixed inset-0 z-[60] bg-black flex items-center justify-center">
+      <div
+        className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+        style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
+      />
     </div>
   )
 }

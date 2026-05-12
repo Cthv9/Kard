@@ -56,6 +56,10 @@ export default defineConfig({
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'react-vendor'
           if (id.includes('@tanstack/react-query')) return 'query-vendor'
           if (id.includes('@supabase')) return 'supabase-vendor'
+          // Keep @zxing in its own chunk so it doesn't bleed into the main
+          // bundle. CardScanner is lazy-loaded; the dynamic import will pull
+          // this chunk only when the user taps "Scansiona".
+          if (id.includes('@zxing')) return 'scanner-vendor'
         },
       },
     },
