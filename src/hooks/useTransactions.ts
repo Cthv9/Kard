@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
 import type { TransactionWithUser } from '../types/app'
 import { ACTIVE_CARDS_KEY } from './useCards'
+import { STATS_KEY } from './useStats'
 
 export const txKey = (cardId: string) => ['transactions', cardId] as const
 
@@ -60,6 +61,7 @@ export function useDeductCredit() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY })
       qc.invalidateQueries({ queryKey: txKey(variables.cardId) })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
     },
   })
 }

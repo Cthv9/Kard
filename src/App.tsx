@@ -11,6 +11,22 @@ const persister = createSyncStoragePersister({
   key: 'kard-query-cache',
   throttleTime: 1000,
 })
+
+// Queries that contain wallet-scoped data are decrypted in memory but must
+// never reach localStorage — persisting them would defeat the at-rest
+// encryption against an attacker with local access (XSS, malware, shared
+// device). Only the stats aggregate (no PAN, no codes, no notes) is allowed.
+const PERSISTABLE_QUERY_KEYS = new Set<string>(['stats'])
+const persistOptions = {
+  persister,
+  maxAge: 1000 * 60 * 60 * 24,
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query: { queryKey: readonly unknown[] }) => {
+      const root = query.queryKey[0]
+      return typeof root === 'string' && PERSISTABLE_QUERY_KEYS.has(root)
+    },
+  },
+}
 import { useAuthStore } from './store/useAuthStore'
 import { useSettingsStore } from './store/useSettingsStore'
 import { useAuthInit } from './hooks/useAuth'
@@ -136,7 +152,7 @@ export default function App() {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}
+      persistOptions={persistOptions}
     >
       <HashRouter>
         <ThemeBootstrap />

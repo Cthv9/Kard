@@ -41,8 +41,17 @@ export function isEncryptedBlob(value: string): boolean {
   return value.startsWith(ENC_PREFIX)
 }
 
-// Password-based key derivation for backup encryption
-export async function deriveBackupKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
+// Iteration count for new backup exports. OWASP 2023 recommends >= 600k for
+// PBKDF2-HMAC-SHA256. Older backups carry their own iteration count in the
+// payload, so increasing this here does not break import of existing files.
+export const BACKUP_PBKDF2_ITERATIONS = 600_000
+
+// Password-based key derivation for backup encryption.
+export async function deriveBackupKey(
+  password: string,
+  salt: Uint8Array<ArrayBuffer>,
+  iterations: number = BACKUP_PBKDF2_ITERATIONS,
+): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -51,7 +60,7 @@ export async function deriveBackupKey(password: string, salt: Uint8Array<ArrayBu
     ['deriveKey']
   )
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 200_000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
     keyMaterial,
     { name: ALGORITHM, length: 256 },
     false,

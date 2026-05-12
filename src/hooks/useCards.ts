@@ -7,6 +7,7 @@ import { encryptField, decryptField, importKey, isEncryptedBlob } from '../lib/c
 import { migrateExistingCards } from '../lib/migrateEncryption'
 import type { Card, CardInsert, CardUpdate, CardWithStats } from '../types/app'
 import { isExpired, isLowBalance } from '../lib/utils'
+import { STATS_KEY } from './useStats'
 
 // Supabase requests can hang indefinitely on flaky mobile connections —
 // surface a real error to the user instead of a permanent spinner.
@@ -26,15 +27,21 @@ export const ARCHIVED_CARDS_KEY = [...CARDS_KEY, 'archived'] as const
 
 const ENCRYPTED_FIELDS = ['card_number', 'expiry_date', 'code'] as const
 
-async function decryptCardFields(card: Card, key: CryptoKey): Promise<Card> {
-  const result = { ...card }
+type DecryptedCard = Card & { decryptionFailed: boolean }
+
+async function decryptCardFields(card: Card, key: CryptoKey): Promise<DecryptedCard> {
+  const result: DecryptedCard = { ...card, decryptionFailed: false }
   for (const field of ENCRYPTED_FIELDS) {
     const v = result[field as keyof Card]
     if (typeof v === 'string' && v.length > 0 && isEncryptedBlob(v)) {
       try {
         (result as Record<string, unknown>)[field] = await decryptField(v, key)
       } catch {
-        // Decryption failure means wrong key or corrupted data — leave raw.
+        // Wrong key or corrupted blob. Blank the field so we never hand the
+        // raw ciphertext to JsBarcode / QRCode renderers and flag the card
+        // so the UI can show a warning.
+        (result as Record<string, unknown>)[field] = ''
+        result.decryptionFailed = true
       }
     }
   }
@@ -57,7 +64,8 @@ async function enc(value: string | null | undefined, key: CryptoKey | null): Pro
   return value
 }
 
-function toCardWithStats(card: Card): CardWithStats {
+function toCardWithStats(card: Card | DecryptedCard): CardWithStats {
+  const decryptionFailed = 'decryptionFailed' in card ? card.decryptionFailed : false
   return {
     ...card,
     spent: card.initial_balance - card.current_balance,
@@ -67,10 +75,11 @@ function toCardWithStats(card: Card): CardWithStats {
         : 0,
     isExpired: isExpired(card.expiry_date),
     isLow: isLowBalance(card.current_balance, card.initial_balance),
+    decryptionFailed,
   }
 }
 
-async function fetchActiveCards(key: CryptoKey | null) {
+async function fetchActiveCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
   const { data, error } = await supabase
     .from('cards')
     .select('*')
@@ -81,7 +90,7 @@ async function fetchActiveCards(key: CryptoKey | null) {
   return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
 
-async function fetchArchivedCards(key: CryptoKey | null) {
+async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
   const { data, error } = await supabase
     .from('cards')
     .select('*')
@@ -143,7 +152,10 @@ export function useAddCard() {
       if (error) throw error
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
+    },
   })
 }
 
@@ -167,6 +179,7 @@ export function useUpdateCard() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY })
       qc.invalidateQueries({ queryKey: ARCHIVED_CARDS_KEY })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
     },
   })
 }
@@ -185,6 +198,7 @@ export function useArchiveCard() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY })
       qc.invalidateQueries({ queryKey: ARCHIVED_CARDS_KEY })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
     },
   })
 }
@@ -203,6 +217,7 @@ export function useRestoreCard() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ACTIVE_CARDS_KEY })
       qc.invalidateQueries({ queryKey: ARCHIVED_CARDS_KEY })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
     },
   })
 }
@@ -217,6 +232,7 @@ export function useDeleteCard() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: CARDS_KEY })
+      qc.invalidateQueries({ queryKey: STATS_KEY })
     },
   })
 }
@@ -246,6 +262,7 @@ export function useRealtimeCards() {
         },
         () => {
           qc.invalidateQueries({ queryKey: CARDS_KEY })
+          qc.invalidateQueries({ queryKey: STATS_KEY })
         }
       )
       .subscribe()
@@ -254,7 +271,10 @@ export function useRealtimeCards() {
     // return-to-foreground we always force a refetch — this is what catches
     // a card added on the web while the installed app was closed.
     const onVisible = () => {
-      if (!document.hidden) qc.invalidateQueries({ queryKey: CARDS_KEY })
+      if (!document.hidden) {
+        qc.invalidateQueries({ queryKey: CARDS_KEY })
+        qc.invalidateQueries({ queryKey: STATS_KEY })
+      }
     }
     document.addEventListener('visibilitychange', onVisible)
 
