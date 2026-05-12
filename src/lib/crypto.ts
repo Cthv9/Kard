@@ -8,7 +8,7 @@ export async function generateWalletKey(): Promise<CryptoKey> {
 
 export async function exportKey(key: CryptoKey): Promise<string> {
   const raw = await crypto.subtle.exportKey('raw', key)
-  return uint8ToBase64(new Uint8Array(raw))
+  return uint8ToBase64(new Uint8Array(raw as ArrayBuffer))
 }
 
 export async function importKey(base64: string): Promise<CryptoKey> {
@@ -20,17 +20,18 @@ export async function encryptField(plaintext: string, key: CryptoKey): Promise<s
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
   const encoded = new TextEncoder().encode(plaintext)
   const ciphertext = await crypto.subtle.encrypt({ name: ALGORITHM, iv }, key, encoded)
-  const result = new Uint8Array(IV_BYTES + ciphertext.byteLength)
-  result.set(iv, 0)
-  result.set(new Uint8Array(ciphertext), IV_BYTES)
-  return ENC_PREFIX + uint8ToBase64(result)
+  const buf = new Uint8Array(new ArrayBuffer(IV_BYTES + ciphertext.byteLength))
+  buf.set(iv, 0)
+  buf.set(new Uint8Array(ciphertext as ArrayBuffer), IV_BYTES)
+  return ENC_PREFIX + uint8ToBase64(buf)
 }
 
 export async function decryptField(blob: string, key: CryptoKey): Promise<string> {
   const b64 = blob.startsWith(ENC_PREFIX) ? blob.slice(ENC_PREFIX.length) : blob
   const bytes = base64ToUint8(b64)
-  const iv = bytes.slice(0, IV_BYTES)
-  const ciphertext = bytes.slice(IV_BYTES)
+  // Use buffer views instead of .slice() to keep Uint8Array<ArrayBuffer> typing.
+  const iv = new Uint8Array(bytes.buffer, 0, IV_BYTES)
+  const ciphertext = new Uint8Array(bytes.buffer, IV_BYTES)
   const plaintext = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, ciphertext)
   return new TextDecoder().decode(plaintext)
 }
@@ -41,7 +42,7 @@ export function isEncryptedBlob(value: string): boolean {
 }
 
 // Password-based key derivation for backup encryption
-export async function deriveBackupKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveBackupKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -58,15 +59,16 @@ export async function deriveBackupKey(password: string, salt: Uint8Array): Promi
   )
 }
 
-export function uint8ToBase64(bytes: Uint8Array): string {
+export function uint8ToBase64(bytes: Uint8Array<ArrayBuffer>): string {
   let binary = ''
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
   return btoa(binary)
 }
 
-export function base64ToUint8(base64: string): Uint8Array {
+export function base64ToUint8(base64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
+  const buf = new ArrayBuffer(binary.length)
+  const bytes = new Uint8Array(buf)
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
   return bytes
 }
