@@ -1,7 +1,25 @@
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
+import { useWalletKeyStore } from '../store/useWalletKeyStore'
+import { useBiometricStore } from '../store/useBiometricStore'
+import { usePrivacyStore } from '../store/usePrivacyStore'
+import { useCardStore } from '../store/useCardStore'
 import { queryClient } from '../lib/queryClient'
+
+// Keys we own in localStorage. signOut() wipes all of them so the next user
+// of the device cannot inherit the previous wallet's encryption key, cached
+// queries, biometric credential, etc. `kard-settings` is kept so theme and
+// language survive a logout — they hold no user data.
+const SENSITIVE_LS_KEYS = [
+  'kard-auth',
+  'kard-query-cache',
+  'kard-wallet-key',
+  'kard-biometric',
+  'kard-card-store',
+  'kard-privacy',
+  'kard-enc-migration-v1',
+]
 
 export function useAuthInit() {
   const { setUser, setSession, setProfile, setLoading } = useAuthStore()
@@ -109,11 +127,25 @@ export async function signOut() {
   // handles this, but if the listener is delayed (timeout path above) the
   // UI would otherwise stay on the home screen until the next reload.
   try {
-    localStorage.removeItem('kard-auth')
-    localStorage.removeItem('kard-query-cache')
+    for (const key of SENSITIVE_LS_KEYS) localStorage.removeItem(key)
   } catch {
     // localStorage can throw in private/quota-exceeded contexts — ignore.
   }
+  // Clear in-memory state of every store that holds wallet-scoped data, so a
+  // re-login on the same tab cannot reuse the previous wallet's key or UI.
   useAuthStore.setState({ user: null, session: null, profile: null, isLoading: false })
+  useWalletKeyStore.setState({ keyBase64: null })
+  useBiometricStore.setState({ isEnabled: false, credentialId: null, userEmail: null, isLocked: false })
+  usePrivacyStore.setState({ privacyMode: false })
+  useCardStore.setState({
+    selectedCardId: null,
+    isFocusMode: false,
+    isSpendSheetOpen: false,
+    isAddCardOpen: false,
+    isScannerOpen: false,
+    isSearchOpen: false,
+    scannedCode: null,
+    editingCard: null,
+  })
   queryClient.clear()
 }
