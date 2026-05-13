@@ -8,7 +8,7 @@ import { SpendSheet } from '../components/transactions/SpendSheet'
 import { useArchivedCards } from '../hooks/useCards'
 import { useCardStore } from '../store/useCardStore'
 import { CardTile } from '../components/cards/CardTile'
-import { usePrivacyStore } from '../store/usePrivacyStore'
+import { useMaskAmount } from '../store/usePrivacyStore'
 import { useTranslation } from '../hooks/useTranslation'
 import { useBackButton } from '../hooks/useBackButton'
 import { Archive } from 'lucide-react'
@@ -16,20 +16,20 @@ import { Archive } from 'lucide-react'
 export function ArchivePage() {
   const { data: cards = [], isLoading } = useArchivedCards()
   const {
-    selectCard, selectedCardId,
     isFocusMode, isSpendSheetOpen, isAddCardOpen, editingCard,
   } = useCardStore()
-  const { maskAmount } = usePrivacyStore()
+  const maskAmount = useMaskAmount()
   const t = useTranslation()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   useBackButton()
 
-  const selectedCard = cards.find((c) => c.id === selectedCardId)
+  // Drive the focus / spend / edit overlays from the LOCAL expandedId so
+  // browsing the archive doesn't mutate the home page's selectedCardId
+  // (which would briefly blank out HomePage on navigate-back).
+  const selectedCard = cards.find((c) => c.id === expandedId)
 
   function handleExpand(id: string) {
-    const next = expandedId === id ? null : id
-    setExpandedId(next)
-    selectCard(next)
+    setExpandedId(expandedId === id ? null : id)
   }
 
   if (isLoading) {

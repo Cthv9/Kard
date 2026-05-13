@@ -49,7 +49,10 @@ export const useCardStore = create<CardStoreState>((set) => ({
   openSpendSheet: () => set({ isSpendSheetOpen: true }),
   closeSpendSheet: () => set({ isSpendSheetOpen: false }),
   openAddCard: () => set({ isAddCardOpen: true, editingCard: null }),
-  closeAddCard: () => set({ isAddCardOpen: false }),
+  // Clearing scannedCode here means the form always reads a fresh value the
+  // next time it opens, removing the need for a mount-time useEffect inside
+  // AddCardForm with empty deps (#30).
+  closeAddCard: () => set({ isAddCardOpen: false, scannedCode: null }),
   openScanner: () => set({ isScannerOpen: true }),
   closeScanner: () => set({ isScannerOpen: false }),
   openSearch: () => set({ isSearchOpen: true }),
@@ -57,5 +60,5 @@ export const useCardStore = create<CardStoreState>((set) => ({
   setScannedCode: (data) => set({ scannedCode: data }),
   clearScannedCode: () => set({ scannedCode: null }),
   openEditCard: (card) => set({ editingCard: card, isAddCardOpen: true }),
-  closeEditCard: () => set({ editingCard: null, isAddCardOpen: false }),
+  closeEditCard: () => set({ editingCard: null, isAddCardOpen: false, scannedCode: null }),
 }))

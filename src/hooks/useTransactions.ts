@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
+import { withTimeout } from '../lib/utils'
 import type { Transaction, TransactionWithUser } from '../types/app'
 import { ACTIVE_CARDS_KEY } from './useCards'
 import { STATS_KEY } from './useStats'
@@ -59,11 +60,13 @@ export function useDeductCredit() {
       note?: string
     }) => {
       if (!profile) throw new Error('Not authenticated')
-      const { data, error } = await supabase.rpc('deduct_credit', {
-        p_card_id: cardId,
-        p_amount: amount,
-        p_note: note,
-      })
+      const { data, error } = await withTimeout(
+        supabase.rpc('deduct_credit', {
+          p_card_id: cardId,
+          p_amount: amount,
+          p_note: note,
+        })
+      )
       if (error) throw error
       return data
     },

@@ -6,20 +6,8 @@ import { useWalletKeyStore } from '../store/useWalletKeyStore'
 import { encryptField, decryptField, importKey, isEncryptedBlob } from '../lib/crypto'
 import { migrateExistingCards } from '../lib/migrateEncryption'
 import type { Card, CardInsert, CardUpdate, CardWithStats } from '../types/app'
-import { isExpired, isLowBalance } from '../lib/utils'
+import { isExpired, isLowBalance, withTimeout } from '../lib/utils'
 import { STATS_KEY } from './useStats'
-
-// Supabase requests can hang indefinitely on flaky mobile connections —
-// surface a real error to the user instead of a permanent spinner.
-function withTimeout<T>(promise: PromiseLike<T>, ms = 15_000): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Richiesta scaduta. Riprova.')), ms)
-    promise.then(
-      (v) => { clearTimeout(timer); resolve(v) },
-      (e) => { clearTimeout(timer); reject(e) }
-    )
-  })
-}
 
 export const CARDS_KEY = ['cards'] as const
 export const ACTIVE_CARDS_KEY = [...CARDS_KEY, 'active'] as const
@@ -189,10 +177,12 @@ export function useArchiveCard() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('cards')
-        .update({ is_archived: true, archived_at: new Date().toISOString() })
-        .eq('id', id)
+      const { error } = await withTimeout(
+        supabase
+          .from('cards')
+          .update({ is_archived: true, archived_at: new Date().toISOString() })
+          .eq('id', id)
+      )
       if (error) throw error
     },
     onSuccess: () => {
@@ -208,10 +198,12 @@ export function useRestoreCard() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('cards')
-        .update({ is_archived: false, archived_at: null })
-        .eq('id', id)
+      const { error } = await withTimeout(
+        supabase
+          .from('cards')
+          .update({ is_archived: false, archived_at: null })
+          .eq('id', id)
+      )
       if (error) throw error
     },
     onSuccess: () => {
@@ -227,7 +219,9 @@ export function useDeleteCard() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('cards').delete().eq('id', id)
+      const { error } = await withTimeout(
+        supabase.from('cards').delete().eq('id', id)
+      )
       if (error) throw error
     },
     onSuccess: () => {

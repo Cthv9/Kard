@@ -1,6 +1,6 @@
 import { Header } from '../components/layout/Header'
 import { useStats } from '../hooks/useStats'
-import { formatCurrency } from '../lib/utils'
+import { formatCurrency, initialsOf } from '../lib/utils'
 import { useTranslation } from '../hooks/useTranslation'
 import { TrendingDown, CreditCard, Archive } from 'lucide-react'
 import type { UserSpending } from '../types/app'
@@ -112,12 +112,7 @@ export function StatsPage() {
 function UserSpendRow({ u, total }: { u: UserSpending; total: number }) {
   const t = useTranslation()
   const pct = total > 0 ? (u.totalSpent / total) * 100 : 0
-  const initials = u.profile.display_name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const initials = initialsOf(u.profile.display_name)
 
   return (
     <div>

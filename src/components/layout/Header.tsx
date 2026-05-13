@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '../../hooks/useTranslation'
+import { initialsOf } from '../../lib/utils'
 
 interface HeaderProps {
   cardCount?: number
@@ -19,12 +20,7 @@ export function Header({ cardCount }: HeaderProps) {
   const navigate = useNavigate()
   const t = useTranslation()
 
-  const initials = profile?.display_name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) ?? '?'
+  const initials = initialsOf(profile?.display_name)
 
   async function handleShareCode() {
     const walletId = profile?.wallet_id
