@@ -101,18 +101,9 @@ export function HomePage() {
         {/* Transactions section */}
         {selectedCard && (
           <div style={{ padding: '22px 24px 0' }}>
-            <div
-              className="flex items-center justify-between"
-              style={{ marginBottom: 16 }}
-            >
+            <div style={{ marginBottom: 16 }}>
               <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
                 Attività — {selectedCard.name}
-              </span>
-              <span
-                className="text-[12px] font-medium cursor-pointer"
-                style={{ color: 'var(--accent2)' }}
-              >
-                Vedi tutto
               </span>
             </div>
             <TransactionList cardId={selectedCard.id} />

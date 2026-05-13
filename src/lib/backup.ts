@@ -10,12 +10,13 @@ import {
   BACKUP_PBKDF2_ITERATIONS,
 } from './crypto'
 
+import { useWalletKeyStore } from '../store/useWalletKeyStore'
+import type { Profile } from '../types/app'
+
 // Iteration count used by backups exported before this constant was tracked
 // in the payload. Older v2 files must keep deriving with this number or
 // decryption fails (PBKDF2 is iteration-sensitive).
 const LEGACY_PBKDF2_ITERATIONS = 200_000
-import { useWalletKeyStore } from '../store/useWalletKeyStore'
-import type { Profile } from '../types/app'
 
 export interface TransactionBackupEntry {
   amount: number
@@ -103,7 +104,7 @@ export async function exportBackup(profile: Profile, password?: string): Promise
         .select('card_id, amount, balance_after, note, created_at')
         .in('card_id', cardIds)
         .order('created_at')
-    : { data: [], error: null as null | { message: string } }
+    : { data: [], error: null }
   if (txRes.error) throw txRes.error
   const walletData = walletRes.data
   const transactions = txRes.data
@@ -148,8 +149,8 @@ export async function exportBackup(profile: Profile, password?: string): Promise
   let filename: string
 
   if (password) {
-    const salt = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(16)))
-    const iv = crypto.getRandomValues(new Uint8Array(new ArrayBuffer(12)))
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    const iv = crypto.getRandomValues(new Uint8Array(12))
     const key = await deriveBackupKey(password, salt, BACKUP_PBKDF2_ITERATIONS)
     const plaintext = new TextEncoder().encode(JSON.stringify(cardEntries))
     const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext)

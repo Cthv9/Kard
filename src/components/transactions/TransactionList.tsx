@@ -1,7 +1,8 @@
 import { CreditCard } from 'lucide-react'
 import { useTransactions, useRealtimeTransactions } from '../../hooks/useTransactions'
-import { timeAgo, formatCurrency } from '../../lib/utils'
+import { timeAgo, formatCurrency, initialsOf, getDateLocale } from '../../lib/utils'
 import { useTranslation } from '../../hooks/useTranslation'
+import { useSettingsStore } from '../../store/useSettingsStore'
 import type { TransactionWithUser } from '../../types/app'
 
 interface TransactionListProps {
@@ -62,13 +63,9 @@ export function TransactionList({ cardId }: TransactionListProps) {
 
 function TransactionItem({ tx }: { tx: TransactionWithUser }) {
   const t = useTranslation()
+  const language = useSettingsStore((s) => s.language)
   const user = tx.profile
-  const initials = user.display_name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const initials = initialsOf(user.display_name)
 
   return (
     <div
@@ -110,7 +107,7 @@ function TransactionItem({ tx }: { tx: TransactionWithUser }) {
             color: 'var(--muted)',
           }}
         >
-          {tx.note ?? t.transactions.defaultNote} · {timeAgo(tx.created_at)}
+          {tx.note ?? t.transactions.defaultNote} · {timeAgo(tx.created_at, getDateLocale(language))}
         </div>
       </div>
 

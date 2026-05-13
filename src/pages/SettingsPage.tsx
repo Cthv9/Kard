@@ -48,6 +48,10 @@ export function SettingsPage() {
 
   async function handleExport() {
     if (!profile) return
+    if (!backupPassword) {
+      const confirmed = window.confirm(t.settings.exportWarnPlaintext)
+      if (!confirmed) return
+    }
     setExportLoading(true)
     try {
       await exportBackup(profile, backupPassword || undefined)

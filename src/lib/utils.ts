@@ -1,7 +1,11 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { formatDistanceToNow, format } from 'date-fns'
-import { it } from 'date-fns/locale'
+import { formatDistanceToNow, format, type Locale } from 'date-fns'
+import { it, enUS } from 'date-fns/locale'
+
+export function getDateLocale(language: 'it' | 'en'): Locale {
+  return language === 'en' ? enUS : it
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -21,20 +25,23 @@ export function withTimeout<T>(promise: PromiseLike<T>, ms = 15_000): Promise<T>
   })
 }
 
+const _fmtCache = new Map<string, Intl.NumberFormat>()
 export function formatCurrency(amount: number, currency = 'EUR'): string {
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount)
+  const key = `it-IT:${currency}`
+  let fmt = _fmtCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.NumberFormat('it-IT', { style: 'currency', currency, minimumFractionDigits: 2 })
+    _fmtCache.set(key, fmt)
+  }
+  return fmt.format(amount)
 }
 
-export function formatDate(dateString: string): string {
-  return format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale: it })
+export function formatDate(dateString: string, locale: Locale = it): string {
+  return format(new Date(dateString), 'dd MMM yyyy, HH:mm', { locale })
 }
 
-export function timeAgo(dateString: string): string {
-  return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: it })
+export function timeAgo(dateString: string, locale: Locale = it): string {
+  return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale })
 }
 
 export function isExpired(expiryDate: string | null): boolean {
