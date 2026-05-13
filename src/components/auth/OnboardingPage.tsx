@@ -36,7 +36,7 @@ export function OnboardingPage() {
     setError(null)
     setLoading(true)
     try {
-      const { data, error: rpcError } = await supabase.rpc('create_wallet', {
+      const { error: rpcError } = await supabase.rpc('create_wallet', {
         p_wallet_name: walletName,
         p_display_name: displayName,
         p_avatar_color: avatarColor,
@@ -54,7 +54,6 @@ export function OnboardingPage() {
         .eq('id', (await supabase.auth.getUser()).data.user!.id)
         .single()
       if (profile) setProfile(profile)
-      void data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore')
     } finally {

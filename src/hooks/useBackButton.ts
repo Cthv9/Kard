@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useCardStore } from '../store/useCardStore'
 
 /**
@@ -24,6 +24,19 @@ export function useBackButton() {
     isFocusMode || isScannerOpen || isSpendSheetOpen ||
     isAddCardOpen || isSearchOpen || !!editingCard
 
+  // Refs keep the popstate handler reading fresh state without re-registering
+  // it on every overlay change. Without this, React 18 batching could leave
+  // the handler with stale values when two overlays swap in the same tick
+  // (e.g. closeScanner + openAddCard), causing the back button to attempt
+  // closing the already-gone overlay.
+  const stateRef = useRef({ isFocusMode, isScannerOpen, isSpendSheetOpen, isAddCardOpen, isSearchOpen, editingCard })
+  const actionsRef = useRef({ exitFocusMode, closeScanner, closeSpendSheet, closeAddCard, closeEditCard, closeSearch })
+
+  useEffect(() => {
+    stateRef.current = { isFocusMode, isScannerOpen, isSpendSheetOpen, isAddCardOpen, isSearchOpen, editingCard }
+    actionsRef.current = { exitFocusMode, closeScanner, closeSpendSheet, closeAddCard, closeEditCard, closeSearch }
+  })
+
   useEffect(() => {
     if (!anyOpen) return
 
@@ -34,15 +47,17 @@ export function useBackButton() {
       // Only intercept our own entries
       if (!(event.state as Record<string, unknown> | null)?.kardOverlay) return
 
-      if (isFocusMode) { exitFocusMode(); return }
-      if (isScannerOpen) { closeScanner(); return }
-      if (isSpendSheetOpen) { closeSpendSheet(); return }
-      if (isAddCardOpen) { closeAddCard(); return }
-      if (editingCard) { closeEditCard(); return }
-      if (isSearchOpen) { closeSearch(); return }
+      const s = stateRef.current
+      const a = actionsRef.current
+      if (s.isFocusMode) { a.exitFocusMode(); return }
+      if (s.isScannerOpen) { a.closeScanner(); return }
+      if (s.isSpendSheetOpen) { a.closeSpendSheet(); return }
+      if (s.isAddCardOpen) { a.closeAddCard(); return }
+      if (s.editingCard) { a.closeEditCard(); return }
+      if (s.isSearchOpen) { a.closeSearch(); return }
     }
 
     window.addEventListener('popstate', handler)
     return () => window.removeEventListener('popstate', handler)
-  }, [anyOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [anyOpen])
 }

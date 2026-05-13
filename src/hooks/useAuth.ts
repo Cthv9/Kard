@@ -16,7 +16,6 @@ const SENSITIVE_LS_KEYS = [
   'kard-query-cache',
   'kard-wallet-key',
   'kard-biometric',
-  'kard-card-store',
   'kard-privacy',
   'kard-enc-migration-v1',
 ]

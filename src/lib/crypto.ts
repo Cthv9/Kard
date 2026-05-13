@@ -76,7 +76,10 @@ export async function deriveBackupKey(
 
 export function uint8ToBase64(bytes: Uint8Array<ArrayBuffer>): string {
   let binary = ''
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  const CHUNK = 32_768
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[])
+  }
   return btoa(binary)
 }
 
