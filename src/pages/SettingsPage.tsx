@@ -38,7 +38,7 @@ export function SettingsPage() {
     if (!user?.id || !user?.email) return
     try {
       const credentialId = await registerBiometric(user.id, user.email)
-      enableBiometric(credentialId, user.email)
+      enableBiometric(credentialId)
       toast.success(t.settings.biometricEnabled)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''

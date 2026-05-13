@@ -128,7 +128,25 @@ export interface Database {
         Update: {
           note?: string | null
         }
-        Relationships: []
+        // FK declarations mirror the constraints created in migration 001
+        // (`REFERENCES cards(id)` and `REFERENCES profiles(id)`). They allow
+        // Supabase's PostgREST client to embed the joined row via
+        // `profile:profiles!user_id(...)` with full type safety, removing the
+        // `as unknown as` cast that was needed in useTransactions.
+        Relationships: [
+          {
+            foreignKeyName: 'transactions_card_id_fkey'
+            columns: ['card_id']
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transactions_user_id_fkey'
+            columns: ['user_id']
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       login_events: {
         Row: {
@@ -192,6 +210,12 @@ export interface Database {
       my_wallet_id: {
         Args: Record<string, never>
         Returns: string
+      }
+      wallet_stats: {
+        Args: Record<string, never>
+        // Postgres jsonb. Shape is enforced in useStats.ts via RawWalletStats
+        // — typing it as Json here keeps the supabase-js inference honest.
+        Returns: Json
       }
     }
     Enums: {

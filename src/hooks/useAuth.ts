@@ -135,7 +135,7 @@ export async function signOut() {
   // re-login on the same tab cannot reuse the previous wallet's key or UI.
   useAuthStore.setState({ user: null, session: null, profile: null, isLoading: false })
   useWalletKeyStore.setState({ keyBase64: null })
-  useBiometricStore.setState({ isEnabled: false, credentialId: null, userEmail: null, isLocked: false })
+  useBiometricStore.setState({ isEnabled: false, credentialId: null, isLocked: false })
   usePrivacyStore.setState({ privacyMode: false })
   useCardStore.setState({
     selectedCardId: null,

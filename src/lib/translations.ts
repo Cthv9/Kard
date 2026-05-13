@@ -8,8 +8,6 @@ const it = {
     search: 'Cerca',
   },
   header: {
-    privacyShow: 'Mostra saldi',
-    privacyHide: 'Nascondi saldi',
     shareCode: 'Condividi codice invito',
     settings: 'Impostazioni',
     signOut: 'Esci',
@@ -204,8 +202,6 @@ const en: Translations = {
     search: 'Search',
   },
   header: {
-    privacyShow: 'Show balances',
-    privacyHide: 'Hide balances',
     shareCode: 'Share invite code',
     settings: 'Settings',
     signOut: 'Sign out',

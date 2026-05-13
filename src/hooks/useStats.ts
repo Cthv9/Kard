@@ -4,54 +4,48 @@ import type { WalletStats } from '../types/app'
 
 export const STATS_KEY = ['stats'] as const
 
+// Server returns numeric columns as strings in JSON to preserve precision.
+// We coerce here so the UI math (sums, percentages) stays in JS numbers.
+interface RawWalletStats {
+  totalRemaining: number | string
+  totalInitial: number | string
+  activeCardCount: number | string
+  archivedCardCount: number | string
+  userSpending: Array<{
+    profile: { id: string; display_name: string; avatar_color: string }
+    totalSpent: number | string
+    transactionCount: number | string
+  }>
+}
+
+function toNumber(v: number | string): number {
+  return typeof v === 'number' ? v : Number(v)
+}
+
 export function useStats() {
   return useQuery({
     queryKey: STATS_KEY,
     queryFn: async (): Promise<WalletStats> => {
-      const [cardsResult, txResult, profilesResult] = await Promise.all([
-        supabase.from('cards').select('id, initial_balance, current_balance, is_archived'),
-        supabase
-          .from('transactions')
-          .select('user_id, amount')
-          .order('created_at', { ascending: false })
-          .limit(2000),
-        supabase.from('profiles').select('*'),
-      ])
-
-      if (cardsResult.error) throw cardsResult.error
-      if (txResult.error) throw txResult.error
-      if (profilesResult.error) throw profilesResult.error
-
-      const cards = cardsResult.data
-      const transactions = txResult.data
-      const profiles = profilesResult.data
-
-      const active = cards.filter((c) => !c.is_archived)
-
-      const totalRemaining = active.reduce((sum, c) => sum + c.current_balance, 0)
-      const totalInitial = active.reduce((sum, c) => sum + c.initial_balance, 0)
-
-      const spendMap = new Map<string, number>()
-      const countMap = new Map<string, number>()
-      for (const tx of transactions) {
-        spendMap.set(tx.user_id, (spendMap.get(tx.user_id) ?? 0) + tx.amount)
-        countMap.set(tx.user_id, (countMap.get(tx.user_id) ?? 0) + 1)
-      }
-
-      const userSpending = profiles.map((p) => ({
-        profile: p,
-        totalSpent: spendMap.get(p.id) ?? 0,
-        transactionCount: countMap.get(p.id) ?? 0,
-      }))
-
+      // Single round-trip; aggregation happens in Postgres (migration 008).
+      // Old client-side path scanned up to 2000 transactions per refresh.
+      const { data, error } = await supabase.rpc('wallet_stats')
+      if (error) throw error
+      // The RPC returns `jsonb`, which Supabase types as Json. The shape is
+      // contractually defined by migration 008 — we narrow here once instead
+      // of teaching the inference engine the full nested structure.
+      const raw = data as unknown as RawWalletStats
       return {
-        totalRemaining,
-        totalInitial,
-        activeCardCount: active.length,
-        archivedCardCount: cards.filter((c) => c.is_archived).length,
-        userSpending,
+        totalRemaining: toNumber(raw.totalRemaining),
+        totalInitial: toNumber(raw.totalInitial),
+        activeCardCount: toNumber(raw.activeCardCount),
+        archivedCardCount: toNumber(raw.archivedCardCount),
+        userSpending: raw.userSpending.map((u) => ({
+          profile: u.profile,
+          totalSpent: toNumber(u.totalSpent),
+          transactionCount: toNumber(u.transactionCount),
+        })),
       }
     },
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 5,
   })
 }

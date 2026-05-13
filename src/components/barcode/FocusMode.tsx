@@ -11,21 +11,16 @@ interface FocusModeProps {
 
 export function FocusMode({ card }: FocusModeProps) {
   const { isFocusMode, exitFocusMode, openSpendSheet } = useCardStore()
+  // codeView is local UI state (user can toggle between barcode/QR), but it
+  // must reset when the underlying card switches. The "store previous prop in
+  // state + sync during render" pattern is the React 19-recommended way to
+  // do this without a side-effecting useEffect.
   const [codeView, setCodeView] = useState<'barcode' | 'qrcode' | 'text'>(card.code_type)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
+  const [lastCardType, setLastCardType] = useState(card.code_type)
+  if (lastCardType !== card.code_type) {
+    setLastCardType(card.code_type)
     setCodeView(card.code_type)
-  }, [card.code_type])
-
-  /* Animate in */
-  useEffect(() => {
-    if (isFocusMode) {
-      requestAnimationFrame(() => setVisible(true))
-    } else {
-      setVisible(false)
-    }
-  }, [isFocusMode])
+  }
 
   /* Screen Wake Lock */
   useEffect(() => {
@@ -54,6 +49,7 @@ export function FocusMode({ card }: FocusModeProps) {
       {/* Overlay — z-index above bottom nav (30) */}
       <div
         onClick={exitFocusMode}
+        className="overlay-fade"
         style={{
           position: 'fixed',
           inset: 0,
@@ -61,18 +57,16 @@ export function FocusMode({ card }: FocusModeProps) {
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           zIndex: 40,
-          opacity: visible ? 1 : 0,
-          transition: 'opacity 0.3s',
         }}
       />
 
       {/* Sheet */}
       <div
+        className="sheet-open"
         style={{
           position: 'fixed',
           bottom: 0,
           left: '50%',
-          transform: visible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(100%)',
           width: '100%',
           maxWidth: 420,
           maxHeight: 'calc(100dvh - 40px)',
@@ -82,7 +76,6 @@ export function FocusMode({ card }: FocusModeProps) {
           borderTopRightRadius: 28,
           padding: '16px 28px calc(32px + env(safe-area-inset-bottom, 0px))',
           zIndex: 41,
-          transition: 'transform 0.4s cubic-bezier(.34,1.16,.64,1)',
           borderTop: '1px solid var(--border)',
         }}
       >

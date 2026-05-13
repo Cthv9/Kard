@@ -22,9 +22,14 @@ export function BarcodeDisplay({
   const svgRef = useRef<SVGSVGElement>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // JsBarcode mutates the SVG element imperatively (it needs a real DOM node
+  // and the format-specific validators throw on bad inputs), so the work
+  // belongs in an effect. setError here only flips the rendered branch and
+  // does not cascade further updates, so the rule's performance concern is
+  // not applicable to this call site.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!svgRef.current || !value) return
-    setError(null)
     try {
       JsBarcode(svgRef.current, value, {
         format,
@@ -37,10 +42,12 @@ export function BarcodeDisplay({
         fontSize: 14,
         fontOptions: 'bold',
       })
+      setError(null)
     } catch {
       setError('Formato codice non valido')
     }
   }, [value, format, width, height, displayValue])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (error) {
     return (

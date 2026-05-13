@@ -197,3 +197,12 @@
 .sheet-open {
   animation: slideUp 0.4s cubic-bezier(0.34, 1.16, 0.64, 1) both;
 }
+
+/* Backdrop fade-in for full-screen modals */
+@keyframes overlayFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.overlay-fade {
+  animation: overlayFade 0.3s ease both;
+}
