@@ -128,6 +128,12 @@ export async function signOut() {
   // UI would otherwise stay on the home screen until the next reload.
   try {
     for (const key of SENSITIVE_LS_KEYS) localStorage.removeItem(key)
+    // Per-wallet flags (kard-enc-migration-v1:<wallet-id>) can't be enumerated
+    // from a static list — sweep them by prefix.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('kard-enc-migration-v1:')) localStorage.removeItem(key)
+    }
   } catch {
     // localStorage can throw in private/quota-exceeded contexts — ignore.
   }

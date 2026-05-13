@@ -77,6 +77,8 @@ export function SettingsPage() {
         toast.error(t.settings.importPasswordRequired)
       } else if (msg === 'wrong_password') {
         toast.error(t.settings.importWrongPassword)
+      } else if (msg === 'wallet_key_missing') {
+        toast.error(t.settings.importKeyMissing)
       } else {
         toast.error(t.settings.importError)
       }

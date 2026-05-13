@@ -13,6 +13,12 @@ export async function exportKey(key: CryptoKey): Promise<string> {
 
 export async function importKey(base64: string): Promise<CryptoKey> {
   const raw = base64ToUint8(base64)
+  // AES-GCM 256-bit keys are exactly 32 bytes. Anything else is either a typo,
+  // a truncated paste, or a probing attempt — fail fast so we don't surface a
+  // confusing WebCrypto OperationError downstream.
+  if (raw.byteLength !== 32) {
+    throw new Error('Invalid wallet key: expected 32 bytes, got ' + raw.byteLength)
+  }
   return crypto.subtle.importKey('raw', raw, ALGORITHM, true, ['encrypt', 'decrypt'])
 }
 
