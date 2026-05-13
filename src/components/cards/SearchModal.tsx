@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { useActiveCards, useArchivedCards } from '../../hooks/useCards'
@@ -24,18 +24,25 @@ export function SearchModal() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [closeSearch])
 
-  const q = query.toLowerCase()
-  const allCards = [
-    ...activeCards.map((c) => ({ ...c, isArchived: false })),
-    ...archivedCards.map((c) => ({ ...c, isArchived: true })),
-  ]
-  const filtered = q
-    ? allCards.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          (c.description ?? '').toLowerCase().includes(q),
-      )
-    : allCards
+  // Combined list rebuilds only when the underlying queries change, not on
+  // every keystroke. Without useMemo, the spread + map ran on each setQuery.
+  const allCards = useMemo(
+    () => [
+      ...activeCards.map((c) => ({ ...c, isArchived: false })),
+      ...archivedCards.map((c) => ({ ...c, isArchived: true })),
+    ],
+    [activeCards, archivedCards]
+  )
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase()
+    if (!q) return allCards
+    return allCards.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.description ?? '').toLowerCase().includes(q),
+    )
+  }, [allCards, query])
 
   function handleSelect(id: string, isArchived: boolean) {
     selectCard(id)

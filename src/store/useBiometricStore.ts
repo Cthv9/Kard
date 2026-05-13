@@ -18,14 +18,21 @@ export const useBiometricStore = create<BiometricState>()(
       credentialId: null,
       isLocked: false,
 
-      enable: (credentialId) => set({ isEnabled: true, credentialId }),
-      disable: () => set({ isEnabled: false, credentialId: null }),
+      enable: (credentialId) => set({ isEnabled: true, credentialId, isLocked: false }),
+      disable: () => set({ isEnabled: false, credentialId: null, isLocked: false }),
       setLocked: (isLocked) => set({ isLocked }),
     }),
     {
       name: 'kard-biometric',
-      // isLocked è transiente — non viene persistito tra sessioni
+      // isLocked is transient: we deliberately re-derive it on every hydration
+      // so a cold boot of a biometric-enabled device starts LOCKED. Persisting
+      // it would let a user kill the app and reopen it unlocked. The
+      // visibility-based 30s lock in App.tsx still applies on subsequent
+      // backgrounds.
       partialize: (s) => ({ isEnabled: s.isEnabled, credentialId: s.credentialId }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.isEnabled) state.isLocked = true
+      },
     }
   )
 )
