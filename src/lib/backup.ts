@@ -253,8 +253,12 @@ export async function importBackup(
     throw new Error('invalid_format')
   }
 
-  // Encrypt sensitive fields before inserting so the DB always gets ciphertext.
+  // The wallet always has a key after the encryption migration ran; refusing
+  // to import without one prevents inserting plaintext rows alongside the
+  // encrypted ones we already have, which would leave the wallet in a half-
+  // encrypted state that the UI cannot recover from.
   const wek = await getWalletKey()
+  if (!wek) throw new Error('wallet_key_missing')
 
   const errors: string[] = []
   const toInsert = await Promise.all(
@@ -263,14 +267,14 @@ export async function importBackup(
       created_by: profile.id,
       name: c.name,
       description: c.description ?? null,
-      code: wek ? await encryptField(c.code, wek) : c.code,
+      code: await encryptField(c.code, wek),
       code_type: c.code_type,
       initial_balance: c.initial_balance,
       current_balance: c.current_balance,
       currency: c.currency ?? 'EUR',
       color: c.color,
-      card_number: c.card_number && wek ? await encryptField(c.card_number, wek) : c.card_number ?? null,
-      expiry_date: c.expiry_date && wek ? await encryptField(c.expiry_date, wek) : c.expiry_date ?? null,
+      card_number: c.card_number ? await encryptField(c.card_number, wek) : null,
+      expiry_date: c.expiry_date ? await encryptField(c.expiry_date, wek) : null,
       is_archived: c.is_archived ?? false,
     }))
   )
