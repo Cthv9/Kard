@@ -2,11 +2,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
-import type { TransactionWithUser } from '../types/app'
+import type { Transaction, TransactionWithUser } from '../types/app'
 import { ACTIVE_CARDS_KEY } from './useCards'
 import { STATS_KEY } from './useStats'
 
 export const txKey = (cardId: string) => ['transactions', cardId] as const
+
+// Shape returned by the JOIN query below. PostgREST embeds the related row
+// under the alias we give it (`profile`) and the FK declared in
+// database.ts → transactions.Relationships makes it a 1-1 (object, not array).
+type TransactionRow = Transaction & {
+  profile: { id: string; display_name: string; avatar_color: string } | null
+}
+
+const FALLBACK_PROFILE: TransactionWithUser['profile'] = {
+  display_name: 'Utente',
+  avatar_color: '#6366f1',
+}
 
 export function useTransactions(cardId: string | null) {
   return useQuery({
@@ -14,22 +26,19 @@ export function useTransactions(cardId: string | null) {
     enabled: !!cardId,
     queryFn: async (): Promise<TransactionWithUser[]> => {
       // Single JOIN query instead of 2 sequential calls.
-      // transactions.user_id → profiles.id FK enables this (migration 001).
+      // transactions.user_id → profiles.id FK is declared in Database types,
+      // so PostgREST resolves the embed without runtime ambiguity.
       const { data, error } = await supabase
         .from('transactions')
         .select('*, profile:profiles!user_id(id, display_name, avatar_color)')
         .eq('card_id', cardId!)
         .order('created_at', { ascending: false })
         .limit(50)
+        .returns<TransactionRow[]>()
       if (error) throw error
       return (data ?? []).map((tx) => ({
         ...tx,
-        // The FK exists in the DB (migration 001) but isn't reflected in the
-        // auto-generated TS types, so we cast through unknown.
-        profile: (tx.profile as unknown as TransactionWithUser['profile'] | null) ?? {
-          display_name: 'Utente',
-          avatar_color: '#6366f1',
-        },
+        profile: tx.profile ?? FALLBACK_PROFILE,
       }))
     },
   })

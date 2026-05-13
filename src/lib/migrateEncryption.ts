@@ -34,8 +34,6 @@ export async function migrateExistingCards(walletId: string, key: CryptoKey): Pr
 
   if (error || !cards) return
 
-  let anyPatched = false
-
   for (const card of cards) {
     const patch: Partial<Record<EncryptedField, string>> = {}
 
@@ -43,7 +41,6 @@ export async function migrateExistingCards(walletId: string, key: CryptoKey): Pr
       const value = card[field as keyof typeof card]
       if (typeof value === 'string' && value.length > 0 && !isEncryptedBlob(value)) {
         patch[field] = await encryptField(value, key)
-        anyPatched = true
       }
     }
 
@@ -54,6 +51,5 @@ export async function migrateExistingCards(walletId: string, key: CryptoKey): Pr
 
   // Mark done whether or not anything was patched — if nothing needed encrypting
   // the wallet was already clean and there is no reason to re-scan next time.
-  void anyPatched
   markMigrationDone()
 }
