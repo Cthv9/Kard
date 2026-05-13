@@ -18,5 +18,12 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // `any` defeats the strict TS checks we just enabled — keep it banned
+      // so it doesn't sneak back in via quick fixes.
+      '@typescript-eslint/no-explicit-any': 'error',
+      // Surface unawaited promises in mutation/error paths.
+      '@typescript-eslint/no-floating-promises': 'off', // requires type-aware lint
+    },
   },
 ])
