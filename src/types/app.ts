@@ -23,7 +23,10 @@ export interface TransactionWithUser extends Transaction {
 }
 
 export interface UserSpending {
-  profile: Profile
+  // The wallet_stats RPC only returns the fields the Stats UI actually
+  // renders. Avoids round-tripping fields like wallet_id/created_at that
+  // would be redundant noise.
+  profile: Pick<Profile, 'id' | 'display_name' | 'avatar_color'>
   totalSpent: number
   transactionCount: number
 }

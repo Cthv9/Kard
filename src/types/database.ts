@@ -211,6 +211,12 @@ export interface Database {
         Args: Record<string, never>
         Returns: string
       }
+      wallet_stats: {
+        Args: Record<string, never>
+        // Postgres jsonb. Shape is enforced in useStats.ts via RawWalletStats
+        // — typing it as Json here keeps the supabase-js inference honest.
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
