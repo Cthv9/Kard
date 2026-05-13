@@ -7,6 +7,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Supabase requests can hang indefinitely on flaky mobile connections —
+// surface a real error to the user instead of a permanent spinner. The
+// timeout is intentionally generous so plain slow networks don't trigger
+// false positives.
+export function withTimeout<T>(promise: PromiseLike<T>, ms = 15_000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Richiesta scaduta. Riprova.')), ms)
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v) },
+      (e) => { clearTimeout(timer); reject(e) }
+    )
+  })
+}
+
 export function formatCurrency(amount: number, currency = 'EUR'): string {
   return new Intl.NumberFormat('it-IT', {
     style: 'currency',
@@ -51,11 +65,24 @@ export function isLightColor(hex: string): boolean {
   return luminance > 0.5
 }
 
-const FALLBACK_HEX = '#6366f1'
+// Return up to two uppercase initials, falling back to '?' when the input is
+// empty/whitespace. Handles the empty-string edge case that `?? '?'` would
+// otherwise miss (empty string isn't nullish, so the fallback wouldn't fire).
+export function initialsOf(displayName: string | null | undefined): string {
+  if (!displayName) return '?'
+  const parts = displayName
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .filter(Boolean)
+  if (parts.length === 0) return '?'
+  return parts.join('').toUpperCase().slice(0, 2)
+}
 
 // Return a darker shade of a 6-digit hex color. Falls back to the indigo
 // brand color when the input is malformed (e.g. legacy 'rgb(…)' values that
 // survived an unencrypted-to-encrypted migration).
+const FALLBACK_HEX = '#6366f1'
 export function darken(hex: string, amount = 0.35): string {
   const rgb = hexToRgb(hex) ?? hexToRgb(FALLBACK_HEX)!
   const r = Math.max(0, Math.round(rgb.r * (1 - amount)))

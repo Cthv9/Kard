@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { useActiveCards, useArchivedCards } from '../../hooks/useCards'
 import { useCardStore } from '../../store/useCardStore'
-import { usePrivacyStore } from '../../store/usePrivacyStore'
+import { useMaskAmount } from '../../store/usePrivacyStore'
 
 export function SearchModal() {
   const closeSearch = useCardStore((s) => s.closeSearch)
   const selectCard = useCardStore((s) => s.selectCard)
-  const { maskAmount } = usePrivacyStore()
+  const maskAmount = useMaskAmount()
   const { data: activeCards = [] } = useActiveCards()
   const { data: archivedCards = [] } = useArchivedCards()
   const navigate = useNavigate()

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { X, Camera } from 'lucide-react'
 import { useAddCard, useUpdateCard } from '../../hooks/useCards'
 import { useCardStore } from '../../store/useCardStore'
@@ -8,7 +8,7 @@ import { useTranslation } from '../../hooks/useTranslation'
 import { toast } from 'sonner'
 
 export function AddCardForm() {
-  const { closeAddCard, closeEditCard, openScanner, scannedCode, clearScannedCode, editingCard } = useCardStore()
+  const { closeAddCard, closeEditCard, openScanner, scannedCode, editingCard } = useCardStore()
   const t = useTranslation()
   const isEdit = !!editingCard
 
@@ -33,10 +33,8 @@ export function AddCardForm() {
   const [cardNumber, setCardNumber] = useState(editingCard?.card_number ?? '')
   const [expiryDate, setExpiryDate] = useState(editingCard?.expiry_date ?? '')
 
-  // Consume scannedCode from store on mount
-  useEffect(() => {
-    if (scannedCode && !isEdit) clearScannedCode()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // scannedCode is consumed via initial useState values above; the store
+  // clears it in closeAddCard / closeEditCard so the next open starts fresh.
 
   const barcodeValid = code.length > 0 && /^[\x20-\x7E]+$/.test(code)
 
