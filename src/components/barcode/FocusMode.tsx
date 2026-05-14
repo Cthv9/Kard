@@ -22,17 +22,35 @@ export function FocusMode({ card }: FocusModeProps) {
     setCodeView(card.code_type)
   }
 
-  /* Screen Wake Lock */
+  /* Screen Wake Lock — browsers silently release the lock when the tab goes
+     hidden, so we re-request it every time the document becomes visible
+     again while FocusMode is open. Without this, returning from screen-off
+     leaves the barcode-scanning user with a dimming display. */
   useEffect(() => {
     if (!isFocusMode) return
+    if (!('wakeLock' in navigator)) return
+
     let wakeLock: WakeLockSentinel | null = null
-    async function requestLock() {
+    let cancelled = false
+
+    async function acquire() {
       try {
-        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen')
+        const lock = await navigator.wakeLock.request('screen')
+        if (cancelled) { void lock.release(); return }
+        wakeLock = lock
       } catch { /* graceful degradation */ }
     }
-    requestLock()
-    return () => { void wakeLock?.release() }
+    const handleVisibility = () => {
+      if (!document.hidden && !wakeLock) acquire()
+    }
+
+    acquire()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibility)
+      void wakeLock?.release()
+    }
   }, [isFocusMode])
 
   /* Body scroll lock */
