@@ -109,36 +109,10 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signOut() {
-  // Race the network sign-out against a short timeout. supabase-js can hang
-  // indefinitely inside a PWA when the server is unreachable, which would
-  // leave the menu closed but the user still on the home page.
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), 4_000)
-  )
-  try {
-    await Promise.race([supabase.auth.signOut(), timeout])
-  } catch {
-    // Local sign-out always wins: it just wipes the session from storage.
-    await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-  }
-
-  // Defensively wipe persisted client state. onAuthStateChange normally
-  // handles this, but if the listener is delayed (timeout path above) the
-  // UI would otherwise stay on the home screen until the next reload.
-  try {
-    for (const key of SENSITIVE_LS_KEYS) localStorage.removeItem(key)
-    // Per-wallet flags (kard-enc-migration-v1:<wallet-id>) can't be enumerated
-    // from a static list — sweep them by prefix.
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith('kard-enc-migration-v1:')) localStorage.removeItem(key)
-    }
-  } catch {
-    // localStorage can throw in private/quota-exceeded contexts — ignore.
-  }
-  // Clear in-memory state of every store that holds wallet-scoped data, so a
-  // re-login on the same tab cannot reuse the previous wallet's key or UI.
-  useAuthStore.setState({ user: null, session: null, profile: null, isLoading: false })
+  // Synchronously clear the AES wallet key and any wallet-scoped UI state
+  // BEFORE awaiting the network sign-out. Any query that fires in the race
+  // window must not be able to decrypt new cards. Setting these here also
+  // makes the post-network reset purely idempotent.
   useWalletKeyStore.setState({ keyBase64: null })
   useBiometricStore.setState({ isEnabled: false, credentialId: null, isLocked: false })
   usePrivacyStore.setState({ privacyMode: false })
@@ -152,5 +126,38 @@ export async function signOut() {
     scannedCode: null,
     editingCard: null,
   })
-  queryClient.clear()
+
+  // Race the network sign-out against a short timeout. supabase-js can hang
+  // indefinitely inside a PWA when the server is unreachable, which would
+  // leave the menu closed but the user still on the home page.
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), 4_000)
+  )
+  try {
+    try {
+      await Promise.race([supabase.auth.signOut(), timeout])
+    } catch {
+      // Local sign-out always wins: it just wipes the session from storage.
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+    }
+  } finally {
+    // The final reset must run even if an unexpected throw escapes the inner
+    // try — otherwise the UI would be stranded with a stale auth header.
+    try {
+      for (const key of SENSITIVE_LS_KEYS) localStorage.removeItem(key)
+      // Per-wallet flags (kard-enc-migration-v1:<wallet-id>) can't be enumerated
+      // from a static list — sweep them by prefix.
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('kard-enc-migration-v1:')) localStorage.removeItem(key)
+      }
+    } catch {
+      // localStorage can throw in private/quota-exceeded contexts — ignore.
+    }
+    useAuthStore.setState({ user: null, session: null, profile: null, isLoading: false })
+    useWalletKeyStore.setState({ keyBase64: null })
+    useBiometricStore.setState({ isEnabled: false, credentialId: null, isLocked: false })
+    usePrivacyStore.setState({ privacyMode: false })
+    queryClient.clear()
+  }
 }
