@@ -78,6 +78,10 @@ function AppRoutes() {
     const LOCK_AFTER = 30_000
 
     const handleVisibility = () => {
+      // Race guard: signOut can null the user just before this listener is
+      // detached. Reading the live store avoids re-locking on a session
+      // that's already being torn down.
+      if (!useAuthStore.getState().user) return
       if (document.hidden) {
         hiddenAt = Date.now()
       } else if (hiddenAt !== null) {

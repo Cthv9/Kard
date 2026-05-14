@@ -240,8 +240,16 @@ export function useRealtimeCards() {
     if (!profile) return
 
     // One-time migration: encrypt any legacy plaintext card fields.
+    // We swallow the rejection in production (the worst case is a re-run on
+    // next mount), but we still surface it on the console so a developer
+    // hitting this state can see the cause instead of a silent half-migrated
+    // wallet.
     getKey().then((key) => {
-      if (key) migrateExistingCards(profile.wallet_id, key).catch(() => {})
+      if (key) {
+        migrateExistingCards(profile.wallet_id, key).catch((err) => {
+          console.error('[kard] migrateExistingCards failed:', err)
+        })
+      }
     })
 
     const channel = supabase

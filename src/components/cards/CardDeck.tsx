@@ -40,6 +40,7 @@ export function CardDeck({ cards }: CardDeckProps) {
   const { selectedCardId, selectCard, openAddCard, openScanner } = useCardStore()
   const carouselRef = useRef<HTMLDivElement>(null)
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollToTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
   const programmaticScrollCount = useRef(0)
   // Measured once and re-measured only on viewport resize, instead of reading
   // offsetWidth on every scroll event (which forces a layout reflow).
@@ -60,6 +61,17 @@ export function CardDeck({ cards }: CardDeckProps) {
     return () => ro.disconnect()
   }, [])
 
+  // Clear any pending timers on unmount so they don't fire on a stale ref or
+  // an unmounted component (minor leak + warning suppression).
+  useEffect(() => {
+    const scrollToTimers = scrollToTimersRef.current
+    return () => {
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
+      scrollToTimers.forEach(clearTimeout)
+      scrollToTimers.clear()
+    }
+  }, [])
+
   /* Scroll carousel to a given index. Counter-based guard handles rapid
      successive scrollTo calls — boolean+setTimeout race-conditioned. */
   const scrollTo = useCallback((idx: number, smooth = true) => {
@@ -67,9 +79,11 @@ export function CardDeck({ cards }: CardDeckProps) {
     if (!el || cardWidth === 0) return
     programmaticScrollCount.current += 1
     el.scrollTo({ left: idx * (cardWidth + GAP), behavior: smooth ? 'smooth' : 'instant' })
-    setTimeout(() => {
+    const id = setTimeout(() => {
+      scrollToTimersRef.current.delete(id)
       programmaticScrollCount.current = Math.max(0, programmaticScrollCount.current - 1)
     }, 500)
+    scrollToTimersRef.current.add(id)
   }, [cardWidth])
 
   /* When selected card changes externally (e.g. dot click → selectCard), sync scroll */
