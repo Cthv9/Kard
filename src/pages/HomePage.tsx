@@ -19,7 +19,7 @@ const CardScanner = lazy(() =>
 )
 
 export function HomePage() {
-  const { data: cards = [], isLoading } = useActiveCards()
+  const { data: cards = [], isPending, isError, isFetching, refetch } = useActiveCards()
   const {
     selectedCardId, selectCard,
     isFocusMode, isSpendSheetOpen, isAddCardOpen, isScannerOpen, editingCard,
@@ -35,7 +35,7 @@ export function HomePage() {
 
   const selectedCard = cards.find((c) => c.id === selectedCardId)
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -45,6 +45,26 @@ export function HomePage() {
           className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
           style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
         />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="text-center px-6">
+          <p className="text-sm mb-5" style={{ color: 'var(--muted)' }}>
+            Impossibile caricare le carte.{'\n'}Controlla la connessione e riprova.
+          </p>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="font-semibold px-6 py-3 rounded-2xl text-sm transition-all active:scale-95 disabled:opacity-50"
+            style={{ background: 'var(--accent)', color: '#0a0a12' }}
+          >
+            {isFetching ? 'Caricamento…' : 'Riprova'}
+          </button>
+        </div>
       </div>
     )
   }

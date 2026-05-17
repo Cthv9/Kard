@@ -68,18 +68,13 @@ function toCardWithStats(card: Card | DecryptedCard): CardWithStats {
 }
 
 async function fetchActiveCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  // Guard against the silent RLS empty-result: if getSession() returns null,
-  // fetchWithAuth falls back to the anon key and PostgREST returns [] (HTTP
-  // 200, no error). Throwing here converts that to a retry-able error instead.
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('Session unavailable')
-
   const { data, error } = await withTimeout(
     supabase
       .from('cards')
       .select('*')
       .eq('is_archived', false)
-      .order('sort_order', { ascending: true })
+      .order('sort_order', { ascending: true }),
+    8_000
   )
   if (error) throw error
   if (!key) return data
@@ -87,15 +82,13 @@ async function fetchActiveCards(key: CryptoKey | null): Promise<(Card | Decrypte
 }
 
 async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('Session unavailable')
-
   const { data, error } = await withTimeout(
     supabase
       .from('cards')
       .select('*')
       .eq('is_archived', true)
-      .order('archived_at', { ascending: false })
+      .order('archived_at', { ascending: false }),
+    8_000
   )
   if (error) throw error
   if (!key) return data

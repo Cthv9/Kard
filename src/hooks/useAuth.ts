@@ -99,13 +99,6 @@ export function useAuthInit() {
           queryClient.invalidateQueries({ queryKey: ['stats'] })
           queryClient.invalidateQueries({ queryKey: ['transactions'] })
         }
-        // On INITIAL_SESSION, always invalidate too — covers the edge case
-        // where a query somehow ran before auth was stable and got [] back.
-        if (event === 'INITIAL_SESSION') {
-          queryClient.invalidateQueries({ queryKey: ['cards'] })
-          queryClient.invalidateQueries({ queryKey: ['stats'] })
-          queryClient.invalidateQueries({ queryKey: ['transactions'] })
-        }
         // TOKEN_REFRESHED / INITIAL_SESSION with cached profile: skip the
         // profile network round-trip — there's nothing to change.
         if (
