@@ -96,8 +96,13 @@ async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | Decryp
 // ── ViewModels ────────────────────────────────────────────────────────────────
 
 export function useActiveCards() {
+  // Wait for Supabase to restore the session before firing — otherwise on
+  // PWA restart the query can race ahead of INITIAL_SESSION/TOKEN_REFRESHED
+  // and Supabase returns empty rows under RLS for an unauthenticated request.
+  const session = useAuthStore((s) => s.session)
   return useQuery({
     queryKey: ACTIVE_CARDS_KEY,
+    enabled: !!session,
     queryFn: async () => {
       const key = await getKey()
       const data = await fetchActiveCards(key)
@@ -107,8 +112,10 @@ export function useActiveCards() {
 }
 
 export function useArchivedCards() {
+  const session = useAuthStore((s) => s.session)
   return useQuery({
     queryKey: ARCHIVED_CARDS_KEY,
+    enabled: !!session,
     queryFn: async () => {
       const key = await getKey()
       const data = await fetchArchivedCards(key)

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { WalletStats } from '../types/app'
 import { withTimeout } from '../lib/utils'
+import { useAuthStore } from '../store/useAuthStore'
 
 export const STATS_KEY = ['stats'] as const
 
@@ -24,8 +25,13 @@ function toNumber(v: number | string): number {
 }
 
 export function useStats() {
+  // Wait for Supabase to restore the session before firing — same race as
+  // useActiveCards: without this the RPC fires with no auth on PWA restart
+  // and PostgREST returns an empty stats blob.
+  const session = useAuthStore((s) => s.session)
   return useQuery({
     queryKey: STATS_KEY,
+    enabled: !!session,
     queryFn: async (): Promise<WalletStats> => {
       // Single round-trip; aggregation happens in Postgres (migration 008).
       // Old client-side path scanned up to 2000 transactions per refresh.
