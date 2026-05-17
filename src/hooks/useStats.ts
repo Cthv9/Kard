@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { WalletStats } from '../types/app'
+import { withTimeout } from '../lib/utils'
 
 export const STATS_KEY = ['stats'] as const
 
@@ -28,7 +29,7 @@ export function useStats() {
     queryFn: async (): Promise<WalletStats> => {
       // Single round-trip; aggregation happens in Postgres (migration 008).
       // Old client-side path scanned up to 2000 transactions per refresh.
-      const { data, error } = await supabase.rpc('wallet_stats')
+      const { data, error } = await withTimeout(supabase.rpc('wallet_stats'))
       if (error) throw error
       // The RPC returns `jsonb`, which Supabase types as Json. The shape is
       // contractually defined by migration 008 — we narrow here once instead

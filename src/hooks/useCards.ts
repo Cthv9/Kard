@@ -68,22 +68,26 @@ function toCardWithStats(card: Card | DecryptedCard): CardWithStats {
 }
 
 async function fetchActiveCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  const { data, error } = await supabase
-    .from('cards')
-    .select('*')
-    .eq('is_archived', false)
-    .order('sort_order', { ascending: true })
+  const { data, error } = await withTimeout(
+    supabase
+      .from('cards')
+      .select('*')
+      .eq('is_archived', false)
+      .order('sort_order', { ascending: true })
+  )
   if (error) throw error
   if (!key) return data
   return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
 
 async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  const { data, error } = await supabase
-    .from('cards')
-    .select('*')
-    .eq('is_archived', true)
-    .order('archived_at', { ascending: false })
+  const { data, error } = await withTimeout(
+    supabase
+      .from('cards')
+      .select('*')
+      .eq('is_archived', true)
+      .order('archived_at', { ascending: false })
+  )
   if (error) throw error
   if (!key) return data
   return Promise.all(data.map((c) => decryptCardFields(c, key)))
@@ -234,10 +238,10 @@ export function useDeleteCard() {
 // Real-time subscription — call once at app root level
 export function useRealtimeCards() {
   const qc = useQueryClient()
-  const profile = useAuthStore((s) => s.profile)
+  const walletId = useAuthStore((s) => s.profile?.wallet_id ?? null)
 
   useEffect(() => {
-    if (!profile) return
+    if (!walletId) return
 
     // One-time migration: encrypt any legacy plaintext card fields.
     // We swallow the rejection in production (the worst case is a re-run on
@@ -246,21 +250,21 @@ export function useRealtimeCards() {
     // wallet.
     getKey().then((key) => {
       if (key) {
-        migrateExistingCards(profile.wallet_id, key).catch((err) => {
+        migrateExistingCards(walletId, key).catch((err) => {
           console.error('[kard] migrateExistingCards failed:', err)
         })
       }
     })
 
     const channel = supabase
-      .channel(`cards-${profile.wallet_id}`)
+      .channel(`cards-${walletId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'cards',
-          filter: `wallet_id=eq.${profile.wallet_id}`,
+          filter: `wallet_id=eq.${walletId}`,
         },
         () => {
           qc.invalidateQueries({ queryKey: CARDS_KEY })
@@ -284,5 +288,5 @@ export function useRealtimeCards() {
       void supabase.removeChannel(channel)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [qc, profile])
+  }, [qc, walletId])
 }

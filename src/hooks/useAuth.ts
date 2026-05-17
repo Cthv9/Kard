@@ -73,7 +73,10 @@ export function useAuthInit() {
         // TOKEN_REFRESHED means only the auth token changed — the profile
         // data hasn't changed, so skip the network round-trip if we already
         // have a profile. This eliminates any perceived delay on resume.
-        if (event === 'TOKEN_REFRESHED' && useAuthStore.getState().profile) {
+        if (
+          (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') &&
+          useAuthStore.getState().profile
+        ) {
           unlock()
           return
         }
