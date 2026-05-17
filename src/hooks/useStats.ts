@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { restRpc } from '../lib/supabase'
 import type { WalletStats } from '../types/app'
-import { withTimeout } from '../lib/utils'
 import { useAuthStore } from '../store/useAuthStore'
 
 export const STATS_KEY = ['stats'] as const
@@ -25,22 +24,14 @@ function toNumber(v: number | string): number {
 }
 
 export function useStats() {
-  // Wait for Supabase to restore the session before firing — same race as
-  // useActiveCards: without this the RPC fires with no auth on PWA restart
-  // and PostgREST returns an empty stats blob.
-  const session = useAuthStore((s) => s.session)
+  const user = useAuthStore((s) => s.user)
   return useQuery({
     queryKey: STATS_KEY,
-    enabled: !!session,
+    enabled: !!user,
     queryFn: async (): Promise<WalletStats> => {
       // Single round-trip; aggregation happens in Postgres (migration 008).
-      // Old client-side path scanned up to 2000 transactions per refresh.
-      const { data, error } = await withTimeout(supabase.rpc('wallet_stats'))
-      if (error) throw error
-      // The RPC returns `jsonb`, which Supabase types as Json. The shape is
-      // contractually defined by migration 008 — we narrow here once instead
-      // of teaching the inference engine the full nested structure.
-      const raw = data as unknown as RawWalletStats
+      // Uses restRpc to bypass initializePromise and start immediately.
+      const raw = await restRpc<RawWalletStats>('wallet_stats')
       return {
         totalRemaining: toNumber(raw.totalRemaining),
         totalInitial: toNumber(raw.totalInitial),

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, restGet } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
 import { withTimeout } from '../lib/utils'
 import type { Transaction, TransactionWithUser } from '../types/app'
@@ -22,24 +22,15 @@ const FALLBACK_PROFILE: TransactionWithUser['profile'] = {
 }
 
 export function useTransactions(cardId: string | null) {
-  const session = useAuthStore((s) => s.session)
+  const user = useAuthStore((s) => s.user)
   return useQuery({
     queryKey: txKey(cardId ?? ''),
-    enabled: !!cardId && !!session,
+    enabled: !!cardId && !!user,
     queryFn: async (): Promise<TransactionWithUser[]> => {
-      // Single JOIN query instead of 2 sequential calls.
-      // transactions.user_id → profiles.id FK is declared in Database types,
-      // so PostgREST resolves the embed without runtime ambiguity.
-      const { data, error } = await withTimeout(
-        supabase
-          .from('transactions')
-          .select('*, profile:profiles!user_id(id, display_name, avatar_color)')
-          .eq('card_id', cardId!)
-          .order('created_at', { ascending: false })
-          .limit(50)
-          .returns<TransactionRow[]>()
+      const data = await restGet<TransactionRow[]>(
+        'transactions',
+        `card_id=eq.${cardId}&select=*,profile:profiles!user_id(id,display_name,avatar_color)&order=created_at.desc&limit=50`
       )
-      if (error) throw error
       return (data ?? []).map((tx) => ({
         ...tx,
         profile: tx.profile ?? FALLBACK_PROFILE,

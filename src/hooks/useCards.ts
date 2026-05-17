@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, restGet } from '../lib/supabase'
 import { useAuthStore } from '../store/useAuthStore'
 import { useWalletKeyStore } from '../store/useWalletKeyStore'
 import { encryptField, decryptField, importKey, isEncryptedBlob } from '../lib/crypto'
@@ -68,29 +68,21 @@ function toCardWithStats(card: Card | DecryptedCard): CardWithStats {
 }
 
 async function fetchActiveCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  const { data, error } = await withTimeout(
-    supabase
-      .from('cards')
-      .select('*')
-      .eq('is_archived', false)
-      .order('sort_order', { ascending: true }),
+  const data = await restGet<Card[]>(
+    'cards',
+    'is_archived=eq.false&order=sort_order.asc&select=*',
     8_000
   )
-  if (error) throw error
   if (!key) return data
   return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
 
 async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | DecryptedCard)[]> {
-  const { data, error } = await withTimeout(
-    supabase
-      .from('cards')
-      .select('*')
-      .eq('is_archived', true)
-      .order('archived_at', { ascending: false }),
+  const data = await restGet<Card[]>(
+    'cards',
+    'is_archived=eq.true&order=archived_at.desc&select=*',
     8_000
   )
-  if (error) throw error
   if (!key) return data
   return Promise.all(data.map((c) => decryptCardFields(c, key)))
 }
@@ -98,13 +90,13 @@ async function fetchArchivedCards(key: CryptoKey | null): Promise<(Card | Decryp
 // ── ViewModels ────────────────────────────────────────────────────────────────
 
 export function useActiveCards() {
-  // Wait for Supabase to restore the session before firing — otherwise on
-  // PWA restart the query can race ahead of INITIAL_SESSION/TOKEN_REFRESHED
-  // and Supabase returns empty rows under RLS for an unauthenticated request.
-  const session = useAuthStore((s) => s.session)
+  // Gate on user (always available from localStorage cache for returning users)
+  // instead of session — combined with restGet() this lets data load immediately
+  // without waiting for Supabase SDK's async initializePromise.
+  const user = useAuthStore((s) => s.user)
   return useQuery({
     queryKey: ACTIVE_CARDS_KEY,
-    enabled: !!session,
+    enabled: !!user,
     queryFn: async () => {
       const key = await getKey()
       const data = await fetchActiveCards(key)
@@ -114,10 +106,10 @@ export function useActiveCards() {
 }
 
 export function useArchivedCards() {
-  const session = useAuthStore((s) => s.session)
+  const user = useAuthStore((s) => s.user)
   return useQuery({
     queryKey: ARCHIVED_CARDS_KEY,
-    enabled: !!session,
+    enabled: !!user,
     queryFn: async () => {
       const key = await getKey()
       const data = await fetchArchivedCards(key)
