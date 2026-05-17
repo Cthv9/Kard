@@ -63,19 +63,45 @@ export function useAuthInit() {
       }
     }
 
+    // TOKEN_REFRESHED can fire BEFORE INITIAL_SESSION when the token
+    // is refreshed during Supabase's own _initialize() flow. If we call
+    // setSession() at that point, card queries become enabled and
+    // immediately call auth.getSession() — which blocks on
+    // initializePromise (still pending). On a slow Android connection the
+    // 15-second withTimeout fires before init completes, the Supabase
+    // fetch falls back to the anon key, RLS returns [], and cards appear
+    // empty. Deferring setSession until INITIAL_SESSION (which fires only
+    // after initializePromise resolves) eliminates the race entirely.
+    let initialSessionEmitted = false
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip TOKEN_REFRESHED events that arrive before INITIAL_SESSION so
+      // card queries never fire while initializePromise is still pending.
+      if (event === 'TOKEN_REFRESHED' && !initialSessionEmitted) {
+        return
+      }
+
       setSession(session)
       setUser(session?.user ?? null)
 
+      if (event === 'INITIAL_SESSION') {
+        initialSessionEmitted = true
+      }
+
       if (session?.user) {
-        // TOKEN_REFRESHED means the access token rotated — any query that
-        // already fired with the previous token may have hit a 401 (PostgREST
-        // returns empty data for unauthorised requests under RLS, which would
-        // leave the UI silently empty). Invalidate the wallet-scoped queries
-        // so they refetch with the new token.
+        // After initialization, TOKEN_REFRESHED means the access token
+        // rotated mid-session. Invalidate wallet-scoped queries so they
+        // refetch with the new token.
         if (event === 'TOKEN_REFRESHED') {
+          queryClient.invalidateQueries({ queryKey: ['cards'] })
+          queryClient.invalidateQueries({ queryKey: ['stats'] })
+          queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        }
+        // On INITIAL_SESSION, always invalidate too — covers the edge case
+        // where a query somehow ran before auth was stable and got [] back.
+        if (event === 'INITIAL_SESSION') {
           queryClient.invalidateQueries({ queryKey: ['cards'] })
           queryClient.invalidateQueries({ queryKey: ['stats'] })
           queryClient.invalidateQueries({ queryKey: ['transactions'] })

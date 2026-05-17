@@ -8,7 +8,7 @@ export const queryClient = new QueryClient({
       // persisted data for minutes.
       staleTime: 1000 * 30,
       gcTime: 1000 * 60 * 60 * 24, // 24h — deve essere >= maxAge del persister
-      retry: 1,
+      retry: 3,
       // useRealtimeCards already invalidates queries on visibilitychange, so
       // refetchOnWindowFocus would just fire a duplicate request on every
       // tab focus. Reconnect refetch stays on because realtime can be silently
