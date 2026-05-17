@@ -29,13 +29,15 @@ export function useTransactions(cardId: string | null) {
       // Single JOIN query instead of 2 sequential calls.
       // transactions.user_id → profiles.id FK is declared in Database types,
       // so PostgREST resolves the embed without runtime ambiguity.
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*, profile:profiles!user_id(id, display_name, avatar_color)')
-        .eq('card_id', cardId!)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .returns<TransactionRow[]>()
+      const { data, error } = await withTimeout(
+        supabase
+          .from('transactions')
+          .select('*, profile:profiles!user_id(id, display_name, avatar_color)')
+          .eq('card_id', cardId!)
+          .order('created_at', { ascending: false })
+          .limit(50)
+          .returns<TransactionRow[]>()
+      )
       if (error) throw error
       return (data ?? []).map((tx) => ({
         ...tx,
