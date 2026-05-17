@@ -70,9 +70,18 @@ export function useAuthInit() {
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        // TOKEN_REFRESHED means only the auth token changed — the profile
-        // data hasn't changed, so skip the network round-trip if we already
-        // have a profile. This eliminates any perceived delay on resume.
+        // TOKEN_REFRESHED means the access token rotated — any query that
+        // already fired with the previous token may have hit a 401 (PostgREST
+        // returns empty data for unauthorised requests under RLS, which would
+        // leave the UI silently empty). Invalidate the wallet-scoped queries
+        // so they refetch with the new token.
+        if (event === 'TOKEN_REFRESHED') {
+          queryClient.invalidateQueries({ queryKey: ['cards'] })
+          queryClient.invalidateQueries({ queryKey: ['stats'] })
+          queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        }
+        // TOKEN_REFRESHED / INITIAL_SESSION with cached profile: skip the
+        // profile network round-trip — there's nothing to change.
         if (
           (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') &&
           useAuthStore.getState().profile

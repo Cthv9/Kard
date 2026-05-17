@@ -22,9 +22,10 @@ const FALLBACK_PROFILE: TransactionWithUser['profile'] = {
 }
 
 export function useTransactions(cardId: string | null) {
+  const session = useAuthStore((s) => s.session)
   return useQuery({
     queryKey: txKey(cardId ?? ''),
-    enabled: !!cardId,
+    enabled: !!cardId && !!session,
     queryFn: async (): Promise<TransactionWithUser[]> => {
       // Single JOIN query instead of 2 sequential calls.
       // transactions.user_id → profiles.id FK is declared in Database types,
