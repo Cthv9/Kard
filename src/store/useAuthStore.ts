@@ -32,7 +32,7 @@ function getStoredSupabaseSession(): Session | null {
     if (!raw) return null
     const stored = JSON.parse(raw)
     if (!stored?.access_token || !stored?.expires_at) return null
-    if ((stored.expires_at as number) * 1000 < Date.now() + 3 * 60 * 1000) return null
+    if ((stored.expires_at as number) * 1000 < Date.now() + 30 * 1000) return null
     return stored as Session
   } catch {
     return null

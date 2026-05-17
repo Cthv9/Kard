@@ -36,17 +36,7 @@ export function HomePage() {
   const selectedCard = cards.find((c) => c.id === selectedCardId)
 
   if (isPending) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'var(--bg)' }}
-      >
-        <div
-          className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
-          style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
-        />
-      </div>
-    )
+    return <HomePageSkeleton />
   }
 
   if (isError) {
@@ -154,6 +144,64 @@ function ScannerFallback() {
         className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
         style={{ borderColor: 'var(--accent2)', borderTopColor: 'transparent' }}
       />
+    </div>
+  )
+}
+
+// Shown while card data is loading (query enabled but no data yet).
+// Mirrors the page layout so there's no layout shift when cards arrive.
+function HomePageSkeleton() {
+  return (
+    <div className="min-h-screen" style={{ background: 'var(--bg)', paddingBottom: 120 }}>
+      <div className="ambient" />
+      <div className="relative" style={{ zIndex: 1 }}>
+        {/* Header placeholder */}
+        <div style={{ padding: '16px 24px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="rounded-xl animate-pulse" style={{ width: 80, height: 20, background: 'var(--panel)' }} />
+          <div className="rounded-full animate-pulse" style={{ width: 36, height: 36, background: 'var(--panel)' }} />
+        </div>
+
+        {/* Section label placeholder */}
+        <div style={{ padding: '12px 24px 16px' }}>
+          <div className="rounded animate-pulse" style={{ width: 90, height: 12, background: 'var(--panel)' }} />
+        </div>
+
+        {/* Card placeholder */}
+        <div style={{ padding: '0 24px' }}>
+          <div
+            className="rounded-3xl animate-pulse"
+            style={{ width: '100%', maxWidth: 340, height: 200, background: 'var(--panel)', margin: '0 auto' }}
+          />
+        </div>
+
+        {/* Action buttons placeholder */}
+        <div style={{ display: 'flex', gap: 12, padding: '24px 24px 0', justifyContent: 'center' }}>
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl animate-pulse"
+              style={{ width: 72, height: 72, background: 'var(--panel)' }}
+            />
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div style={{ margin: '28px 24px 0', height: 1, background: 'var(--border)' }} />
+
+        {/* Transaction skeleton rows */}
+        <div style={{ padding: '22px 24px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="rounded-full animate-pulse" style={{ width: 40, height: 40, background: 'var(--panel)', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="rounded animate-pulse" style={{ width: '60%', height: 12, background: 'var(--panel)' }} />
+                <div className="rounded animate-pulse" style={{ width: '40%', height: 10, background: 'var(--panel)' }} />
+              </div>
+              <div className="rounded animate-pulse" style={{ width: 50, height: 14, background: 'var(--panel)' }} />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
