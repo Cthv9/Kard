@@ -4,11 +4,13 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
+const isAndroid = process.env.BUILD_TARGET === 'android'
+
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
+    !isAndroid && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       workbox: {
@@ -41,8 +43,8 @@ export default defineConfig({
         ],
       },
     }),
-  ],
-  base: '/Kard/',
+  ].filter(Boolean),
+  base: isAndroid ? '/' : '/Kard/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
