@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elimina Account — Kard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a12;
+      color: #e2e8f0;
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      flex: 1;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .logo-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .warning-box {
+      background: #1a0f0f;
+      border: 1px solid #7f1d1d;
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 0.875rem;
+      align-items: flex-start;
+    }
+
+    .warning-icon {
+      font-size: 1.2rem;
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
+
+    .warning-box p {
+      color: #fca5a5;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #a78bfa;
+      margin-bottom: 0.75rem;
+    }
+
+    .data-list {
+      background: #0f0f1e;
+      border: 1px solid #1e1e3a;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .data-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #1e1e3a;
+    }
+
+    .data-item:last-child {
+      border-bottom: none;
+    }
+
+    .data-item-icon {
+      width: 36px;
+      height: 36px;
+      background: #1a1730;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .data-item-text strong {
+      display: block;
+      color: #f1f5f9;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+
+    .data-item-text span {
+      color: #64748b;
+      font-size: 0.82rem;
+    }
+
+    .timeline-box {
+      background: #0f0f1e;
+      border: 1px solid #1e1e3a;
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .timeline-badge {
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .timeline-box p {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      margin: 0;
+    }
+
+    .cta-box {
+      background: linear-gradient(135deg, #1a1730, #12102a);
+      border: 1px solid #2e1065;
+      border-radius: 16px;
+      padding: 1.75rem 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .cta-box p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .cta-link {
+      display: inline-block;
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.85rem 2rem;
+      border-radius: 12px;
+      text-decoration: none;
+      letter-spacing: 0.2px;
+      transition: opacity 0.15s;
+    }
+
+    .cta-link:hover { opacity: 0.85; }
+
+    .cta-subject {
+      display: block;
+      color: #4b5563;
+      font-size: 0.78rem;
+      margin-top: 0.875rem;
+    }
+
+    .note {
+      color: #4b5563;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .note a {
+      color: #a78bfa;
+      text-decoration: none;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      border-top: 1px solid #1e1e2e;
+      color: #374151;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" rx="20" fill="#1a1730"/>
+        <polygon points="52,14 28,44 42,44 28,66 60,34 44,34" fill="url(#g)"/>
+        <defs>
+          <linearGradient id="g" x1="28" y1="14" x2="60" y2="66" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#a78bfa"/>
+            <stop offset="1" stop-color="#7c3aed"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="logo-name">Kard</span>
+    </div>
+
+    <h1>Elimina il tuo account</h1>
+    <p class="subtitle">Ultimo aggiornamento: giugno 2026</p>
+
+    <div class="warning-box">
+      <span class="warning-icon">⚠️</span>
+      <p>L'eliminazione dell'account è <strong>permanente e irreversibile</strong>. Non sarà possibile recuperare i dati dopo la cancellazione.</p>
+    </div>
+
+    <h2>Cosa viene eliminato</h2>
+    <div class="data-list">
+      <div class="data-item">
+        <div class="data-item-icon">👤</div>
+        <div class="data-item-text">
+          <strong>Account e profilo</strong>
+          <span>Email, nome visualizzato, colore avatar e tutti i dati di accesso</span>
+        </div>
+      </div>
+      <div class="data-item">
+        <div class="data-item-icon">👛</div>
+        <div class="data-item-text">
+          <strong>Wallet condiviso</strong>
+          <span>Il portafoglio e tutti i membri associati. Se sei l'unico membro, il wallet viene eliminato definitivamente</span>
+        </div>
+      </div>
+      <div class="data-item">
+        <div class="data-item-icon">💳</div>
+        <div class="data-item-text">
+          <strong>Carte fedeltà</strong>
+          <span>Tutti i dati delle carte: nomi, codici a barre, note e immagini</span>
+        </div>
+      </div>
+      <div class="data-item">
+        <div class="data-item-icon">📊</div>
+        <div class="data-item-text">
+          <strong>Transazioni e statistiche</strong>
+          <span>Storico completo delle spese e tutti i dati aggregati</span>
+        </div>
+      </div>
+    </div>
+
+    <h2>Tempistiche</h2>
+    <div class="timeline-box">
+      <span class="timeline-badge">Entro 30 giorni</span>
+      <p>Dalla ricezione della richiesta, tutti i dati vengono eliminati definitivamente dai nostri server.</p>
+    </div>
+
+    <h2>Come richiedere l'eliminazione</h2>
+    <div class="cta-box">
+      <p>Invia una email dall'indirizzo associato al tuo account Kard con oggetto <em>"Elimina account"</em>. Ti risponderemo entro 48 ore confermando la presa in carico.</p>
+      <a class="cta-link" href="mailto:Cthv9.dev@gmail.com?subject=Elimina%20account%20Kard">
+        Invia richiesta
+      </a>
+      <span class="cta-subject">Cthv9.dev@gmail.com</span>
+    </div>
+
+    <p class="note">
+      Per altre informazioni sul trattamento dei dati consulta la nostra
+      <a href="privacy.html">Privacy Policy</a>.
+    </p>
+
+  </div>
+
+  <footer>
+    Kard — Portafoglio Condiviso &nbsp;·&nbsp; © 2026
+  </footer>
+</body>
+</html>
