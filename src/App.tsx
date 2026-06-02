@@ -1,4 +1,5 @@
 import { useLayoutEffect, useEffect } from 'react'
+import { setupDeepLinks } from './lib/deeplink'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
@@ -152,6 +153,11 @@ function NotConfigured() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const cleanup = setupDeepLinks()
+    return cleanup ?? undefined
+  }, [])
+
   if (!isConfigured) return <NotConfigured />
 
   return (
