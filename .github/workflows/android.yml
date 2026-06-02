@@ -41,6 +41,7 @@ jobs:
       - name: Build release AAB
         run: |
           cd android && ./gradlew bundleRelease \
+            -Dkeystore.pkcs12.legacy \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/kard.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_STORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEY_ALIAS }} \
