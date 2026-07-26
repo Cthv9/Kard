@@ -3,90 +3,265 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0F0B1C" />
   <title>Privacy Policy — Kard</title>
   <style>
+    /* Palette e tipografia allineate all'app Android (KardTheme, tema scuro). */
+    :root {
+      --bg:        #0F0B1C;
+      --text:      #FFFFFF;
+      --muted:     rgba(255,255,255,.48);
+      --faint:     rgba(255,255,255,.28);
+      --glass:     rgba(255,255,255,.08);
+      --border:    rgba(255,255,255,.10);
+      --violet:    #7B5CFF;
+      --pink:      #FF3D8B;
+      --green:     #19C37D;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0a0a12;
-      color: #e2e8f0;
-      line-height: 1.7;
-      padding: 2rem 1rem;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
     }
-    .container { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem; color: #fff; }
-    .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 2.5rem; }
-    h2 { font-size: 1.1rem; font-weight: 700; color: #a78bfa; margin: 2rem 0 0.5rem; }
-    p { margin-bottom: 0.75rem; color: #cbd5e1; }
-    ul { padding-left: 1.4rem; margin-bottom: 0.75rem; color: #cbd5e1; }
-    li { margin-bottom: 0.3rem; }
-    a { color: #a78bfa; }
-    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #1e1e2e; color: #64748b; font-size: 0.85rem; }
+    /* Aurora backdrop: gli stessi bagliori radiali del composable AuroraBackdrop. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(900px 620px at 12% -6%,  rgba(61,26,255,.16), transparent 70%),
+        radial-gradient(820px 560px at 96%  6%,  rgba(255,45,120,.12), transparent 70%),
+        radial-gradient(1000px 700px at 50% 108%, rgba(255,106,26,.09), transparent 70%);
+    }
+    .container {
+      position: relative;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 2.75rem 1.5rem 3.5rem;
+    }
+
+    /* ── Brand mark ─────────────────────────────────────────────── */
+    .brand { display: flex; align-items: center; gap: .6rem; margin-bottom: 2.25rem; }
+    .mark  { width: 34px; height: 34px; display: block; }
+    .brand-name { font-size: 1.05rem; font-weight: 900; letter-spacing: -.4px; }
+
+    /* ── Editorial header ───────────────────────────────────────── */
+    h1 {
+      font-size: clamp(1.9rem, 7vw, 2.35rem);
+      font-weight: 900;
+      letter-spacing: -1.1px;
+      line-height: 1.1;
+      margin-bottom: .5rem;
+    }
+    .subtitle { color: var(--muted); font-size: .78rem; margin-bottom: 1.5rem; }
+    .lede { color: rgba(255,255,255,.72); font-size: .88rem; margin-bottom: 2.25rem; }
+
+    /* ── Section labels ─────────────────────────────────────────── */
+    h2 {
+      font-size: .62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: var(--muted);
+      margin: 2.25rem 0 .6rem;
+    }
+    p  { color: rgba(255,255,255,.78); font-size: .855rem; margin-bottom: .7rem; }
+    ul { list-style: none; margin-bottom: .7rem; }
+    li {
+      color: rgba(255,255,255,.78);
+      font-size: .855rem;
+      margin-bottom: .45rem;
+      padding-left: 1.05rem;
+      position: relative;
+    }
+    li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: .62em;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--violet);
+    }
+    strong { color: var(--text); font-weight: 700; }
+    em { color: rgba(255,255,255,.9); font-style: normal; font-weight: 600; }
+    a { color: var(--violet); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Glass card ─────────────────────────────────────────────── */
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.15rem;
+      margin: .9rem 0;
+    }
+    .card p:last-child, .card ul:last-child, .card li:last-child { margin-bottom: 0; }
+    .card.warn { border-color: rgba(255,107,133,.32); background: rgba(255,107,133,.07); }
+    .card.warn strong { color: #FF6B85; }
+
+    .tag {
+      display: inline-block;
+      font-size: .58rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: .28rem .6rem;
+      border-radius: 999px;
+      margin-bottom: .55rem;
+    }
+    .tag.enc   { color: var(--green);  background: rgba(25,195,125,.14); }
+    .tag.plain { color: var(--pink);   background: rgba(255,61,139,.14); }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--faint);
+      font-size: .75rem;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Privacy Policy</h1>
-    <p class="subtitle">Kard — Portafoglio Condiviso &nbsp;·&nbsp; Ultimo aggiornamento: 2 giugno 2026</p>
 
-    <h2>1. Titolare del trattamento</h2>
-    <p>Il titolare del trattamento dei dati personali è il developer dell'applicazione Kard, contattabile all'indirizzo email: <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a>.</p>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="rotate(-12 22 33)"><rect x="15" y="9" width="14" height="26" rx="4" fill="#7B5CFF"/></g>
+        <g transform="rotate(-4 22 33)"><rect x="15" y="9" width="14" height="26" rx="4" fill="#FF3D8B"/></g>
+        <g transform="rotate(4 22 33)"><rect x="15" y="9" width="14" height="26" rx="4" fill="#19C37D"/></g>
+        <g transform="rotate(12 22 33)">
+          <rect x="15" y="9" width="14" height="26" rx="4" fill="#FFFFFF"/>
+          <rect x="16.5" y="26" width="11" height="1.6" fill="#160830" opacity=".2"/>
+          <rect x="16.5" y="29" width="8"  height="1.6" fill="#160830" opacity=".15"/>
+        </g>
+      </svg>
+      <span class="brand-name">Kard</span>
+    </div>
 
-    <h2>2. Dati raccolti</h2>
+    <h1>Privacy<br>Policy.</h1>
+    <p class="subtitle">Portafoglio Condiviso &nbsp;·&nbsp; Ultimo aggiornamento: 26 luglio 2026</p>
+    <p class="lede">Come vengono trattati i tuoi dati nell'applicazione <strong>Kard</strong> per Android,
+    distribuita tramite Google Play.</p>
+
+    <h2>1 · Titolare del trattamento</h2>
+    <p>Il titolare del trattamento dei dati personali è il developer dell'applicazione Kard, contattabile all'indirizzo email <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a>.</p>
+
+    <h2>2 · Dati raccolti</h2>
     <p>L'applicazione raccoglie esclusivamente i seguenti dati:</p>
     <ul>
-      <li><strong>Indirizzo email</strong> — fornito volontariamente dall'utente al momento della registrazione, utilizzato come credenziale di accesso e per l'invio di email di recupero password.</li>
-      <li><strong>Nome visualizzato e colore avatar</strong> — scelti dall'utente durante la configurazione del profilo, visibili agli altri membri del portafoglio condiviso.</li>
-      <li><strong>Dati delle carte e transazioni</strong> — inseriti volontariamente dall'utente. I dati sensibili (codici a barre, note) sono cifrati lato client prima di essere trasmessi ai server.</li>
+      <li><strong>Indirizzo email</strong> — fornito volontariamente in fase di registrazione, usato come credenziale di accesso e per le email di recupero password.</li>
+      <li><strong>Nome visualizzato e colore avatar</strong> — scelti durante la configurazione del profilo, visibili agli altri membri del portafoglio condiviso.</li>
+      <li><strong>Dati delle carte fedeltà</strong> — nome, descrizione, codice della tessera, eventuale numero carta e data di scadenza, saldo, valuta e colore.</li>
+      <li><strong>Transazioni</strong> — importo, saldo risultante, data e nota facoltativa, associati al membro che le ha registrate.</li>
+    </ul>
+    <p>Non vengono raccolti dati di posizione, rubrica, identificativi pubblicitari, né dati di utilizzo a fini statistici.</p>
+
+    <h2>3 · Cifratura end-to-end</h2>
+    <p>Alcuni dati delle carte sono cifrati sul dispositivo <em>prima</em> di essere trasmessi, con una chiave che non
+    lascia mai i tuoi dispositivi e non viene mai inviata ai nostri server né a Supabase.</p>
+
+    <div class="card">
+      <span class="tag enc">Cifrato end-to-end</span>
+      <p>Codice della tessera, numero carta, data di scadenza. Il server ne conserva solo la versione cifrata, illeggibile.</p>
+    </div>
+    <div class="card">
+      <span class="tag plain">Archiviato in chiaro</span>
+      <p>Nome e descrizione della carta, importi e saldi, valuta, colore, note delle transazioni, date, nome visualizzato ed email.</p>
+    </div>
+
+    <div class="card warn">
+      <p><strong>Conseguenza importante.</strong> Poiché la chiave di cifratura esiste soltanto sui tuoi dispositivi,
+      se la perdi — reinstallando l'app senza aver conservato il codice di recupero e senza un altro dispositivo
+      attivo — i codici delle tue tessere non sono più decifrabili. Nemmeno il titolare del trattamento è in grado di
+      recuperarli. Per questo l'app mostra il codice di recupero alla creazione del portafoglio e chiede di conservarlo.</p>
+    </div>
+
+    <h2>4 · Dati sul dispositivo</h2>
+    <ul>
+      <li>Una <strong>copia locale</strong> di carte, transazioni e profili, per la consultazione anche offline.</li>
+      <li>La <strong>chiave di cifratura del portafoglio</strong>, in un'area protetta del sistema
+      (<em>EncryptedSharedPreferences</em>, con chiave master nel keystore hardware di Android quando disponibile).</li>
+      <li>Le <strong>preferenze</strong> dell'app: tema, modalità privacy, blocco biometrico.</li>
+    </ul>
+    <p>Disinstallando l'applicazione tutti questi dati locali vengono rimossi dal dispositivo.</p>
+
+    <h2>5 · Autorizzazioni richieste</h2>
+    <ul>
+      <li><strong>Fotocamera</strong> — solo per la scansione dei codici a barre e QR. Nessuna immagine viene acquisita, archiviata o trasmessa: la fotocamera è usata in tempo reale per la sola lettura del codice.</li>
+      <li><strong>Biometria</strong> — facoltativa, per lo sblocco dell'app. La verifica è eseguita da Android: l'applicazione riceve solo l'esito e non ha alcun accesso all'impronta o al volto, che non lasciano mai il dispositivo.</li>
+      <li><strong>Internet</strong> — per la sincronizzazione con il backend.</li>
     </ul>
 
-    <h2>3. Accesso alla fotocamera</h2>
-    <p>L'app richiede l'accesso alla fotocamera del dispositivo esclusivamente per la funzione di scansione codici a barre. Nessuna immagine viene acquisita, archiviata o trasmessa: la fotocamera viene usata solo in tempo reale per la lettura del codice.</p>
+    <h2>6 · Backup esportati</h2>
+    <p>L'app consente di esportare un file di backup delle proprie carte, proteggibile con una password scelta
+    dall'utente; senza password il contenuto è leggibile in chiaro. Il backup contiene i codici tessera
+    <em>decifrati</em>, così da poter essere ripristinato altrove. Una volta esportato, il file è sotto il tuo
+    controllo esclusivo: sei responsabile della sua conservazione e condivisione.</p>
 
-    <h2>4. Finalità del trattamento</h2>
+    <h2>7 · Finalità del trattamento</h2>
     <ul>
-      <li>Autenticazione e gestione dell'account utente</li>
+      <li>Autenticazione e gestione dell'account</li>
       <li>Sincronizzazione in tempo reale del portafoglio condiviso tra i membri</li>
       <li>Invio di email transazionali (es. recupero password) tramite Supabase</li>
     </ul>
+    <p>La base giuridica è l'esecuzione del servizio richiesto dall'utente (art. 6.1.b GDPR).</p>
 
-    <h2>5. Responsabili esterni del trattamento</h2>
-    <p>I dati vengono archiviati e processati tramite <strong>Supabase</strong> (Supabase Inc., USA), una piattaforma backend conforme al GDPR. Supabase agisce come responsabile del trattamento ai sensi dell'art. 28 GDPR. Per maggiori informazioni: <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>.</p>
-    <p>Non vengono utilizzati servizi di analytics, advertising o remarketing di terze parti.</p>
+    <h2>8 · Portafoglio condiviso</h2>
+    <p>Entrando in un portafoglio condiviso, il tuo nome visualizzato, il colore avatar e le transazioni che registri
+    diventano visibili agli altri membri di quel portafoglio. Il tuo indirizzo email non è condiviso con loro.</p>
 
-    <h2>6. Trasferimento dei dati</h2>
-    <p>I dati possono essere trasferiti verso paesi extra-UE (Supabase utilizza infrastrutture AWS). Il trasferimento avviene nel rispetto delle garanzie previste dal GDPR, tra cui le Clausole Contrattuali Standard adottate dalla Commissione Europea.</p>
+    <h2>9 · Responsabili esterni</h2>
+    <p>I dati sono archiviati e processati tramite <strong>Supabase</strong> (Supabase Inc., USA), piattaforma backend
+    conforme al GDPR, che agisce come responsabile del trattamento ai sensi dell'art. 28 GDPR. Maggiori informazioni:
+    <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a>.</p>
+    <p>Non vengono utilizzati servizi di analytics, advertising o remarketing di terze parti, e non è integrato alcun SDK di tracciamento.</p>
 
-    <h2>7. Conservazione dei dati</h2>
-    <p>I dati vengono conservati per tutta la durata dell'account. L'utente può richiedere la cancellazione del proprio account e di tutti i dati associati in qualsiasi momento scrivendo a <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a>.</p>
+    <h2>10 · Trasferimento dei dati</h2>
+    <p>I dati possono essere trasferiti verso paesi extra-UE (Supabase utilizza infrastrutture AWS), nel rispetto delle
+    garanzie previste dal GDPR, tra cui le Clausole Contrattuali Standard adottate dalla Commissione Europea.</p>
 
-    <h2>8. Diritti dell'interessato (GDPR)</h2>
-    <p>Ai sensi del Regolamento UE 2016/679, l'utente ha il diritto di:</p>
+    <h2>11 · Conservazione</h2>
+    <p>I dati sono conservati per tutta la durata dell'account. Puoi richiederne la cancellazione in qualsiasi momento
+    seguendo la procedura descritta nella pagina <a href="elimina-account.html">Elimina il tuo account</a>,
+    raggiungibile anche dall'app da <em>Profilo → Informazioni</em>.</p>
+
+    <h2>12 · Diritti dell'interessato</h2>
+    <p>Ai sensi del Regolamento UE 2016/679 hai il diritto di:</p>
     <ul>
-      <li>Accedere ai propri dati personali (art. 15)</li>
+      <li>Accedere ai tuoi dati personali (art. 15)</li>
       <li>Rettificarli (art. 16)</li>
-      <li>Ottenerne la cancellazione ("diritto all'oblio", art. 17)</li>
+      <li>Ottenerne la cancellazione, "diritto all'oblio" (art. 17)</li>
       <li>Limitarne il trattamento (art. 18)</li>
-      <li>Riceverli in formato portabile (art. 20)</li>
-      <li>Opporsi al trattamento (art. 21)</li>
+      <li>Riceverli in formato portabile (art. 20) — la funzione di esportazione backup dell'app assolve a questo scopo</li>
+      <li>Opporti al trattamento (art. 21)</li>
     </ul>
-    <p>Per esercitare questi diritti scrivere a <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a>. L'utente ha inoltre il diritto di proporre reclamo all'autorità di controllo competente (in Italia: <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la Protezione dei Dati Personali</a>).</p>
+    <p>Per esercitarli scrivi a <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a>. Hai inoltre il diritto di
+    proporre reclamo all'autorità di controllo competente (in Italia il
+    <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">Garante per la Protezione dei Dati Personali</a>).</p>
 
-    <h2>9. Sicurezza</h2>
-    <p>Tutti i dati sono trasmessi tramite connessioni cifrate (HTTPS/TLS). I dati sensibili delle carte sono cifrati con crittografia AES lato client prima della trasmissione: il server non riceve mai dati in chiaro.</p>
+    <h2>13 · Sicurezza</h2>
+    <p>Tutti i dati sono trasmessi tramite connessioni cifrate (HTTPS/TLS). I campi indicati al punto 3 sono cifrati
+    sul dispositivo con <strong>AES-256-GCM</strong> prima della trasmissione. I backup protetti da password derivano
+    la chiave con <strong>PBKDF2-HMAC-SHA256</strong> a 600.000 iterazioni, con cifratura AES-GCM.</p>
 
-    <h2>10. App per minori</h2>
+    <h2>14 · Minori</h2>
     <p>L'applicazione non è destinata a utenti di età inferiore ai 13 anni e non raccoglie consapevolmente dati da minori.</p>
 
-    <h2>11. Modifiche alla presente policy</h2>
-    <p>Eventuali modifiche saranno pubblicate su questa pagina con aggiornamento della data in cima al documento.</p>
+    <h2>15 · Modifiche</h2>
+    <p>Eventuali modifiche saranno pubblicate su questa pagina, con aggiornamento della data in cima al documento.</p>
 
-    <h2>12. Contatti</h2>
+    <h2>16 · Contatti</h2>
     <p>Per qualsiasi domanda relativa alla privacy: <a href="mailto:Cthv9.dev@gmail.com">Cthv9.dev@gmail.com</a></p>
 
-    <div class="footer">
-      <p>Kard — Portafoglio Condiviso &nbsp;·&nbsp; Privacy Policy &nbsp;·&nbsp; v1.0</p>
-    </div>
+    <footer>Kard — Portafoglio Condiviso &nbsp;·&nbsp; Privacy Policy v1.1</footer>
   </div>
 </body>
 </html>
