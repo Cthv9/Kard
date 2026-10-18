@@ -1,5 +1,11 @@
 name: Deploy to GitHub Pages
 
+# La PWA è dismessa: il sito pubblica solo la pagina di congedo (site/) e le due
+# pagine richieste da Google Play (privacy e cancellazione account, public/).
+# Il sorgente della PWA resta nel repo ma non viene più compilato né pubblicato.
+# Gli indirizzi /Kard/privacy.html e /Kard/elimina-account.html NON devono
+# cambiare: sono registrati in Play Console e linkati dall'app Android.
+
 on:
   push:
     branches: [main, master]
@@ -20,24 +26,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp site/index.html site/sw.js _site/
+          cp site/index.html _site/404.html
+          cp public/privacy.html public/elimina-account.html public/favicon.svg public/favicon.ico _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     needs: build
