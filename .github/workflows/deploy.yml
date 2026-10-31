@@ -31,7 +31,7 @@ jobs:
           mkdir _site
           cp site/index.html site/sw.js _site/
           cp site/index.html _site/404.html
-          cp public/privacy.html public/elimina-account.html public/favicon.svg public/favicon.ico _site/
+          cp public/privacy.html public/elimina-account.html public/sicurezza.html public/favicon.svg public/favicon.ico _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
